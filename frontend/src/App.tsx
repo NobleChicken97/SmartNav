@@ -4,12 +4,15 @@ import { useAuthStore } from './stores/authStore';
 import LoadingSpinner from './components/LoadingSpinner';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
+import OrganizerRoute from './components/OrganizerRoute';
 import MapPage from './pages/MapPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { RouteErrorBoundary } from './components/SpecializedErrorBoundaries';
 import { Toaster } from 'react-hot-toast';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import OrganizerDashboard from './pages/OrganizerDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   const { checkAuth, isLoading } = useAuthStore();
@@ -80,16 +83,25 @@ function App() {
             }
           />
 
+          {/* Organizer Routes */}
+          <Route
+            path="/organizer/dashboard"
+            element={
+              <RouteErrorBoundary routeName="Organizer Dashboard">
+                <OrganizerRoute>
+                  <OrganizerDashboard />
+                </OrganizerRoute>
+              </RouteErrorBoundary>
+            }
+          />
+
           {/* Admin Routes */}
           <Route
-            path="/admin/*"
+            path="/admin/dashboard"
             element={
               <RouteErrorBoundary routeName="Admin Dashboard">
                 <AdminRoute>
-                  <div className="p-8 text-center">
-                    <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                    <p className="text-gray-600 mt-2">Admin functionality will be implemented here</p>
-                  </div>
+                  <AdminDashboard />
                 </AdminRoute>
               </RouteErrorBoundary>
             }

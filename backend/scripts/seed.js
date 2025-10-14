@@ -1,12 +1,20 @@
-const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+
+// ES module equivalents of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // Import models
-const User = require('../src/models/User');
-const Location = require('../src/models/Location');
-const Event = require('../src/models/Event');
+import User from '../src/models/User.js';
+import Location from '../src/models/Location.js';
+import Event from '../src/models/Event.js';
 
 // Connect to database
 const connectDB = async () => {
@@ -173,12 +181,17 @@ const sampleLocations = [
 ];
 
 // Sample events
-const createSampleEvents = async (locations) => {
+const createSampleEvents = async (locations, users) => {
   const academicBlock = locations.find(loc => loc.name === "Academic Block A");
   const library = locations.find(loc => loc.name === "Central Library");
   const sportsComplex = locations.find(loc => loc.name === "Sports Complex");
   const studentCenter = locations.find(loc => loc.name === "Student Center");
   const lectureHall = locations.find(loc => loc.name === "Lecture Hall 101");
+  
+  // Find organizer users to assign as event creators
+  const techClubOrganizer = users.find(u => u.email === "tech.club@student.thapar.edu");
+  const culturalOrganizer = users.find(u => u.email === "cultural.society@student.thapar.edu");
+  const sportsOrganizer = users.find(u => u.email === "sports.committee@student.thapar.edu");
 
   const now = new Date();
   const tomorrow = new Date(now);
@@ -198,7 +211,8 @@ const createSampleEvents = async (locations) => {
       locationId: academicBlock._id,
       dateTime: new Date(tomorrow.setHours(14, 0, 0, 0)),
       capacity: 50,
-      organizer: "Computer Science Department",
+      organizer: "Tech Club President",
+      createdBy: techClubOrganizer._id,
       tags: ["ai", "machine-learning", "technology", "programming"]
     },
     {
@@ -208,7 +222,8 @@ const createSampleEvents = async (locations) => {
       locationId: studentCenter._id,
       dateTime: new Date(nextWeek.setHours(9, 0, 0, 0)),
       capacity: 500,
-      organizer: "Student Technical Society",
+      organizer: "Tech Club President",
+      createdBy: techClubOrganizer._id,
       tags: ["technology", "competition", "exhibition", "fest"]
     },
     {
@@ -218,7 +233,8 @@ const createSampleEvents = async (locations) => {
       locationId: sportsComplex._id,
       dateTime: new Date(nextWeek.setHours(16, 0, 0, 0)),
       capacity: 200,
-      organizer: "Sports Committee",
+      organizer: "Sports Committee Lead",
+      createdBy: sportsOrganizer._id,
       tags: ["basketball", "tournament", "sports", "competition"]
     },
     {
@@ -228,7 +244,8 @@ const createSampleEvents = async (locations) => {
       locationId: lectureHall._id,
       dateTime: new Date(nextMonth.setHours(11, 0, 0, 0)),
       capacity: 100,
-      organizer: "Placement Cell",
+      organizer: "Tech Club President",
+      createdBy: techClubOrganizer._id,
       tags: ["career", "guidance", "placement", "professional"]
     },
     {
@@ -238,7 +255,8 @@ const createSampleEvents = async (locations) => {
       locationId: library._id,
       dateTime: new Date(tomorrow.setHours(10, 0, 0, 0)),
       capacity: 30,
-      organizer: "Academic Writing Center",
+      organizer: "Tech Club President",
+      createdBy: techClubOrganizer._id,
       tags: ["research", "writing", "academic", "skills"]
     },
     {
@@ -248,7 +266,8 @@ const createSampleEvents = async (locations) => {
       locationId: studentCenter._id,
       dateTime: new Date(nextWeek.setHours(19, 0, 0, 0)),
       capacity: 300,
-      organizer: "Cultural Committee",
+      organizer: "Cultural Society Head",
+      createdBy: culturalOrganizer._id,
       tags: ["music", "dance", "culture", "performance"]
     }
   ];
@@ -262,6 +281,27 @@ const sampleUsers = [
     password: "Admin123",
     role: "admin",
     interests: ["technology", "management", "education"]
+  },
+  {
+    name: "Tech Club President",
+    email: "tech.club@student.thapar.edu",
+    password: "Organizer123",
+    role: "organizer",
+    interests: ["technology", "ai", "hackathon", "events"]
+  },
+  {
+    name: "Cultural Society Head",
+    email: "cultural.society@student.thapar.edu",
+    password: "Organizer123",
+    role: "organizer",
+    interests: ["culture", "music", "dance", "events"]
+  },
+  {
+    name: "Sports Committee Lead",
+    email: "sports.committee@student.thapar.edu",
+    password: "Organizer123",
+    role: "organizer",
+    interests: ["sports", "fitness", "competition", "events"]
   },
   {
     name: "Rahul Sharma",
@@ -335,8 +375,8 @@ const seedDatabase = async () => {
       { buildingId: academicBlockA._id }
     );
 
-    // Create events
-    const sampleEvents = await createSampleEvents(createdLocations);
+    // Create events (pass users for createdBy assignment)
+    const sampleEvents = await createSampleEvents(createdLocations, createdUsers);
     const createdEvents = await Event.insertMany(sampleEvents);
     console.log(`Created ${createdEvents.length} events`);
 

@@ -9,31 +9,52 @@ import {
   getRecommendedEvents,
   registerForEvent,
   unregisterFromEvent,
-  getUpcomingEvents
+  getUpcomingEvents,
+  getMyEvents
 } from '../controllers/eventController.js';
-import { authenticate, authorize, optionalAuth } from '../middleware/auth.js';
+import { authenticate, optionalAuth } from '../middleware/auth.js';
 import { 
   validateEvent, 
   validateEventQuery, 
   validateObjectId 
 } from '../middleware/validation.js';
 import { writeLimiter } from '../middleware/rateLimiter.js';
+import { isEventOwner, requireOrganizerOrAdmin } from '../middleware/rbac.js';
 
 // Public routes (with optional auth for personalization)
 router.get('/', optionalAuth, validateEventQuery, getEvents);
 router.get('/upcoming', getUpcomingEvents);
 router.get('/:id', validateObjectId, getEvent);
 
-// Private routes
+// Authenticated routes (all roles)
 router.use(authenticate);
 router.get('/recommended', getRecommendedEvents);
+router.get('/my-events', getMyEvents); // Get events created by current user
 router.post('/:id/register', validateObjectId, registerForEvent);
 router.delete('/:id/register', validateObjectId, unregisterFromEvent);
 
-// Admin only routes
-router.use(authorize('admin'));
-router.post('/', writeLimiter, validateEvent, createEvent);
-router.put('/:id', writeLimiter, validateObjectId, validateEvent, updateEvent);
-router.delete('/:id', writeLimiter, validateObjectId, deleteEvent);
+// Organizer and Admin routes - Create events
+router.post('/', 
+  requireOrganizerOrAdmin,
+  writeLimiter, 
+  validateEvent, 
+  createEvent
+);
+
+// Owner or Admin routes - Edit/Delete own events
+router.put('/:id', 
+  writeLimiter,
+  validateObjectId, 
+  isEventOwner, // Checks ownership or admin
+  validateEvent,
+  updateEvent
+);
+
+router.delete('/:id', 
+  writeLimiter,
+  validateObjectId,
+  isEventOwner, // Checks ownership or admin
+  deleteEvent
+);
 
 export default router;

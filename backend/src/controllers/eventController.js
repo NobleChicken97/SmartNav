@@ -101,7 +101,7 @@ const getEvent = asyncHandler(async (req, res) => {
 /**
  * @desc    Create event
  * @route   POST /api/events
- * @access  Private (Admin only)
+ * @access  Private (Organizer or Admin)
  */
 const createEvent = asyncHandler(async (req, res) => {
   // Verify location exists
@@ -113,9 +113,17 @@ const createEvent = asyncHandler(async (req, res) => {
     });
   }
   
-  const event = await Event.create(req.body);
+  // Create event with createdBy field
+  const eventData = {
+    ...req.body,
+    createdBy: req.user._id,
+    organizer: req.body.organizer || req.user.name // Use provided organizer name or user's name
+  };
+  
+  const event = await Event.create(eventData);
   
   await event.populate('locationId', 'name coordinates type');
+  await event.populate('createdBy', 'name email role');
   
   res.status(201).json({
     success: true,
@@ -127,7 +135,7 @@ const createEvent = asyncHandler(async (req, res) => {
 /**
  * @desc    Update event
  * @route   PUT /api/events/:id
- * @access  Private (Admin only)
+ * @access  Private (Event Owner or Admin)
  */
 const updateEvent = asyncHandler(async (req, res) => {
   // If updating location, verify it exists
@@ -141,6 +149,10 @@ const updateEvent = asyncHandler(async (req, res) => {
     }
   }
   
+  // Don't allow updating createdBy field
+  delete req.body.createdBy;
+  
+  // Event already fetched and ownership verified by isEventOwner middleware
   const event = await Event.findByIdAndUpdate(
     req.params.id,
     req.body,
@@ -148,7 +160,8 @@ const updateEvent = asyncHandler(async (req, res) => {
       new: true,
       runValidators: true
     }
-  ).populate('locationId', 'name coordinates type');
+  ).populate('locationId', 'name coordinates type')
+   .populate('createdBy', 'name email role');
   
   if (!event) {
     return res.status(404).json({
@@ -167,9 +180,10 @@ const updateEvent = asyncHandler(async (req, res) => {
 /**
  * @desc    Delete event
  * @route   DELETE /api/events/:id
- * @access  Private (Admin only)
+ * @access  Private (Event Owner or Admin)
  */
 const deleteEvent = asyncHandler(async (req, res) => {
+  // Event ownership already verified by isEventOwner middleware
   const event = await Event.findById(req.params.id);
   
   if (!event) {
@@ -285,6 +299,26 @@ const getUpcomingEvents = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Get events created by the current user (organizer's events)
+ * @route   GET /api/events/my-events
+ * @access  Private (Authenticated users)
+ */
+const getMyEvents = asyncHandler(async (req, res) => {
+  const events = await Event.findByCreator(req.user._id, {
+    sort: { dateTime: -1 }, // Most recent first
+    populate: [
+      { path: 'locationId', select: 'name address coordinates' },
+      { path: 'createdBy', select: 'name email role' }
+    ]
+  });
+  
+  res.json({
+    success: true,
+    data: { events }
+  });
+});
+
 export {
   getEvents,
   getEvent,
@@ -294,5 +328,6 @@ export {
   getRecommendedEvents,
   registerForEvent,
   unregisterFromEvent,
-  getUpcomingEvents
+  getUpcomingEvents,
+  getMyEvents
 };

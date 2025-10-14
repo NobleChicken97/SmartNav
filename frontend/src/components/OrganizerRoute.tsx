@@ -1,27 +1,26 @@
 /**
- * AdminRoute - Protected route for admins only
- * Redirects non-admins to home page
+ * OrganizerRoute - Protected route for organizers and admins
+ * Redirects non-organizers to home page
  * Redirects unauthenticated users to login
  */
 
-import { memo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { isAdmin } from '../utils/permissions';
+import { isOrganizer } from '../utils/permissions';
 import LoadingSpinner from './LoadingSpinner';
 
-interface AdminRouteProps {
+interface OrganizerRouteProps {
   children: React.ReactNode;
 }
 
-const AdminRoute = memo<AdminRouteProps>(({ children }) => {
+const OrganizerRoute: React.FC<OrganizerRouteProps> = ({ children }) => {
   const { user, isLoading } = useAuthStore();
 
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner />
       </div>
     );
   }
@@ -31,15 +30,13 @@ const AdminRoute = memo<AdminRouteProps>(({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Redirect to home if not admin
-  if (!isAdmin(user)) {
+  // Redirect to home if not organizer or admin
+  if (!isOrganizer(user)) {
     return <Navigate to="/" replace />;
   }
 
-  // User is authenticated and has admin role
+  // User is authenticated and has organizer/admin role
   return <>{children}</>;
-});
+};
 
-AdminRoute.displayName = 'AdminRoute';
-
-export default AdminRoute;
+export default OrganizerRoute;

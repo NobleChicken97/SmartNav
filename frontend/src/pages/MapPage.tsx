@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { LocationService } from '../services/locationService';
 import { EventService } from '../services/eventService';
@@ -97,6 +98,25 @@ const MapPage: React.FC = () => {
             
             {user && (
               <div className="flex items-center space-x-4">
+                {/* Dashboard Navigation based on role */}
+                {user.role === 'organizer' || user.role === 'admin' ? (
+                  <Link
+                    to="/organizer/dashboard"
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                  >
+                    📊 Organizer Dashboard
+                  </Link>
+                ) : null}
+                
+                {user.role === 'admin' && (
+                  <Link
+                    to="/admin/dashboard"
+                    className="text-sm text-red-600 hover:text-red-800 font-medium transition-colors"
+                  >
+                    ⚙️ Admin Dashboard
+                  </Link>
+                )}
+                
                 <span className="text-sm nav-link">
                   Welcome, {user.name}
                 </span>

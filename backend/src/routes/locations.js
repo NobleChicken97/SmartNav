@@ -11,13 +11,14 @@ import {
   getNearbyLocations,
   importLocations
 } from '../controllers/locationController.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 import { 
   validateLocation, 
   validateLocationQuery, 
   validateObjectId 
 } from '../middleware/validation.js';
 import { writeLimiter, uploadLimiter } from '../middleware/rateLimiter.js';
+import { requireAdmin } from '../middleware/rbac.js';
 
 // Configure multer for CSV uploads
 const upload = multer({
@@ -39,13 +40,38 @@ router.get('/', validateLocationQuery, getLocations);
 router.get('/nearby', validateLocationQuery, getNearbyLocations);
 router.get('/:id', validateObjectId, getLocation);
 
-// Admin only routes
-router.use(authenticate);
-router.use(authorize('admin'));
+// Admin only routes - Location management restricted to administrators
+router.post('/', 
+  authenticate,
+  requireAdmin,
+  writeLimiter, 
+  validateLocation, 
+  createLocation
+);
 
-router.post('/', writeLimiter, validateLocation, createLocation);
-router.put('/:id', writeLimiter, validateObjectId, validateLocation, updateLocation);
-router.delete('/:id', writeLimiter, validateObjectId, deleteLocation);
-router.post('/import', uploadLimiter, upload.single('csv'), importLocations);
+router.put('/:id', 
+  authenticate,
+  requireAdmin,
+  writeLimiter, 
+  validateObjectId, 
+  validateLocation, 
+  updateLocation
+);
+
+router.delete('/:id', 
+  authenticate,
+  requireAdmin,
+  writeLimiter, 
+  validateObjectId, 
+  deleteLocation
+);
+
+router.post('/import', 
+  authenticate,
+  requireAdmin,
+  uploadLimiter, 
+  upload.single('csv'), 
+  importLocations
+);
 
 export default router;

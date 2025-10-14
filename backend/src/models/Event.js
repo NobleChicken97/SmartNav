@@ -61,6 +61,12 @@ const eventSchema = new mongoose.Schema({
     required: [true, 'Event organizer is required'],
     trim: true,
     maxlength: [100, 'Organizer name cannot exceed 100 characters']
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Event creator is required'],
+    index: true
   }
 }, {
   timestamps: true
@@ -140,6 +146,25 @@ eventSchema.statics.getRecommendations = function(userInterests, limit = 5) {
     .sort({ dateTime: 1, createdAt: -1 })
     .limit(limit)
     .populate('locationId', 'name coordinates type');
+};
+
+// Static method to find events by creator (for organizer dashboard)
+eventSchema.statics.findByCreator = function(userId, options = {}) {
+  const query = { createdBy: userId };
+  
+  // Optionally filter by upcoming events only
+  if (options.upcomingOnly) {
+    query.dateTime = { $gte: new Date() };
+  }
+  
+  return this.find(query)
+    .sort({ dateTime: options.upcomingOnly ? 1 : -1 })
+    .populate('locationId', 'name coordinates type');
+};
+
+// Instance method to check if user is the creator of the event
+eventSchema.methods.isCreatedBy = function(userId) {
+  return this.createdBy.toString() === userId.toString();
 };
 
 // Ensure virtuals are included in JSON output

@@ -4,18 +4,30 @@ import {
   getProfile,
   updateProfile,
   getUserEvents,
-  deleteAccount
+  deleteAccount,
+  getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUser
 } from '../controllers/userController.js';
 import { authenticate } from '../middleware/auth.js';
-import { validateProfileUpdate } from '../middleware/validation.js';
+import { validateProfileUpdate, validateObjectId } from '../middleware/validation.js';
 import { writeLimiter } from '../middleware/rateLimiter.js';
+import { requireAdmin, canModifyUser } from '../middleware/rbac.js';
 
 // All user routes require authentication
 router.use(authenticate);
 
+// User profile routes (self-service)
 router.get('/profile', getProfile);
 router.put('/profile', writeLimiter, validateProfileUpdate, updateProfile);
 router.get('/events', getUserEvents);
 router.delete('/profile', writeLimiter, deleteAccount);
+
+// Admin routes - User management
+router.get('/', requireAdmin, getAllUsers); // Get all users
+router.get('/:id', requireAdmin, validateObjectId, getUserById); // Get user by ID
+router.put('/:id', writeLimiter, validateObjectId, canModifyUser, updateUser); // Update user (admin or self)
+router.delete('/:id', writeLimiter, validateObjectId, requireAdmin, deleteUser); // Delete user (admin only)
 
 export default router;

@@ -1,7 +1,18 @@
 import { create } from 'zustand';
 import { AuthService } from '../services/authService';
 import { logger } from '../utils/logger';
-import { User, LoginCredentials, RegisterData } from '../types';
+import { User, LoginCredentials, RegisterData, Event } from '../types';
+import { 
+  isAdmin, 
+  isOrganizer, 
+  isStudent, 
+  canCreateEvent,
+  canEditEvent,
+  canDeleteEvent,
+  canManageLocations,
+  canManageUsers,
+  canViewEventRegistrations
+} from '../utils/permissions';
 
 interface AuthState {
   user: User | null;
@@ -18,6 +29,17 @@ interface AuthActions {
   checkAuth: () => Promise<void>;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
+  
+  // Role checking helpers
+  isAdmin: () => boolean;
+  isOrganizer: () => boolean;
+  isStudent: () => boolean;
+  canCreateEvent: () => boolean;
+  canEditEvent: (event: Event | null) => boolean;
+  canDeleteEvent: (event: Event | null) => boolean;
+  canManageLocations: () => boolean;
+  canManageUsers: () => boolean;
+  canViewEventRegistrations: (event: Event | null) => boolean;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -149,5 +171,51 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   setLoading: (loading: boolean) => {
     set({ isLoading: loading });
+  },
+
+  // Role checking helpers
+  isAdmin: () => {
+    const { user } = get();
+    return isAdmin(user);
+  },
+
+  isOrganizer: () => {
+    const { user } = get();
+    return isOrganizer(user);
+  },
+
+  isStudent: () => {
+    const { user } = get();
+    return isStudent(user);
+  },
+
+  canCreateEvent: () => {
+    const { user } = get();
+    return canCreateEvent(user);
+  },
+
+  canEditEvent: (event: Event | null) => {
+    const { user } = get();
+    return canEditEvent(user, event);
+  },
+
+  canDeleteEvent: (event: Event | null) => {
+    const { user } = get();
+    return canDeleteEvent(user, event);
+  },
+
+  canManageLocations: () => {
+    const { user } = get();
+    return canManageLocations(user);
+  },
+
+  canManageUsers: () => {
+    const { user } = get();
+    return canManageUsers(user);
+  },
+
+  canViewEventRegistrations: (event: Event | null) => {
+    const { user } = get();
+    return canViewEventRegistrations(user, event);
   },
 }));

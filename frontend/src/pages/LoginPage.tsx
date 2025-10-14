@@ -7,7 +7,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
+  const { login, isLoading, error, clearError, isAuthenticated, user, isAdmin, isOrganizer } = useAuthStore();
 
   const [formData, setFormData] = useState<LoginCredentials>({
     email: '',
@@ -17,15 +17,29 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Redirect to intended page after login
+  // Redirect to intended page after login with role-based routing
   const state = (location.state ?? null) as { from?: { pathname?: string } } | null;
-  const from = state?.from?.pathname || '/dashboard';
+  const from = state?.from?.pathname;
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(from, { replace: true });
+    if (isAuthenticated && user) {
+      // Determine redirect path based on role
+      let redirectPath = from;
+      
+      // If no specific path was requested, use role-based defaults
+      if (!redirectPath || redirectPath === '/login') {
+        if (isAdmin()) {
+          redirectPath = '/admin/dashboard';
+        } else if (isOrganizer()) {
+          redirectPath = '/organizer/dashboard';
+        } else {
+          redirectPath = '/dashboard';
+        }
+      }
+      
+      navigate(redirectPath, { replace: true });
     }
-  }, [isAuthenticated, navigate, from]);
+  }, [isAuthenticated, user, navigate, from, isAdmin, isOrganizer]);
 
   useEffect(() => {
     // Clear any previous errors when component mounts

@@ -118,6 +118,14 @@ export class EventService {
     return raw.data.events;
   }
 
+  /**
+   * Get events created by the current user (organizer's events)
+   */
+  static async getMyEvents(): Promise<Event[]> {
+    const raw = await apiClient.get<{ success: boolean; data: { events: Event[] } }>('/events/my-events');
+    return raw.data.events;
+  }
+
   static async getEventAttendees(id: string): Promise<unknown[]> {
     const raw = await apiClient.get<{ success: boolean; data: { attendees: unknown[] } }>(`/events/${id}/attendees`);
     return raw.data.attendees;

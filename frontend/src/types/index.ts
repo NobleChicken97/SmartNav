@@ -26,7 +26,7 @@ export interface User {
   name: string;
   email: string;
   interests: string[];
-  role: 'student' | 'admin';
+  role: 'student' | 'organizer' | 'admin';
   createdAt: string;
   updatedAt: string;
 }
@@ -113,6 +113,7 @@ export interface Event {
   attendees: EventAttendee[];
   tags: string[];
   organizer: string;
+  createdBy: string | User; // Creator user ID or populated User object
   availableSpots?: number;
   isFull?: boolean;
   createdAt: string;
