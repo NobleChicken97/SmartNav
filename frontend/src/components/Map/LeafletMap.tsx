@@ -37,7 +37,6 @@ export const LeafletMap = memo<LeafletMapProps>(({
   className = '',
   enableRouting = false,
   routingMode = false,
-  onToggleRouting,
 }) => {
   // TODO: Implement events display and onEventSelect functionality
   
@@ -65,13 +64,6 @@ export const LeafletMap = memo<LeafletMapProps>(({
   const handleEventToggle = useCallback(() => {
     setShowEvents(prev => !prev);
   }, []);
-
-  // New routing callbacks
-  const handleToggleRouting = useCallback(() => {
-    if (onToggleRouting) {
-      onToggleRouting();
-    }
-  }, [onToggleRouting]);
 
   const handleMapClick = useCallback((e: L.LeafletMouseEvent) => {
     if (!routingMode || !enableRouting) return;
