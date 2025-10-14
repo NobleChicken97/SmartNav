@@ -6,7 +6,7 @@ export const MAP_CONFIG = {
   },
   zoom: 16,
   maxZoom: 19,
-  minZoom: 10,
+  minZoom: 15,  // Prevent zooming out too far - keeps focus on campus
   
   // Tile layer configuration
   tileLayer: {

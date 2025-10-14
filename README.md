@@ -53,11 +53,10 @@ The application will be available at:
 
 ## 📖 Documentation
 
-- **[📋 Development Guide](./docs/DEVELOPMENT.md)** - Complete development setup and coding standards
-- **[🔌 API Documentation](./docs/API.md)** - Backend API reference and examples  
+- **[ API Documentation](./docs/API.md)** - Backend API reference and examples  
 - **[🚀 Deployment Guide](./docs/DEPLOYMENT.md)** - Production deployment instructions
-- **[🐛 Issues & Improvements](./docs/ISSUES_AND_IMPROVEMENTS.md)** - Current status and enhancement roadmap
-- **[🤝 Contributing](./docs/CONTRIBUTING.md)** - How to contribute to the project
+- **[🎯 Current Status & Roadmap](./docs/ISSUES_AND_IMPROVEMENTS.md)** - Project health and future plans
+- **[📋 Development Rules](./.github/instructions/development.instructions.md)** - Coding standards for AI assistants
 
 ## 🏗️ Tech Stack
 

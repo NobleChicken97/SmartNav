@@ -196,14 +196,12 @@ Get all users (admin only).
 
 ### Roles:
 - **Student**: Basic user with read access and event registration
-- **Admin**: Can manage locations and events
-- **Super Admin**: Full system access including user management
+- **Admin**: Can manage locations, events, and has elevated privileges
 
 ### Protected Route Examples:
 - 🟢 **Public**: `/locations`, `/events` (GET only)
 - 🔒 **Authentication Required**: User profile, event registration
-- 👮 **Admin Only**: Create/Update/Delete locations and events
-- 🔱 **Super Admin**: User management, system settings
+- 👮 **Admin Only**: Create/Update/Delete locations and events, user management
 
 ---
 

@@ -100,9 +100,23 @@ export const LeafletMap = memo<LeafletMapProps>(({
   useEffect(() => {
     if (mapRef.current && !mapInstanceRef.current) {
       try {
-        // Create map instance
+        // Clear any existing map instance from the container
+        if ((mapRef.current as any)._leaflet_id) {
+          delete (mapRef.current as any)._leaflet_id;
+        }
+
+        // Set campus bounds - restrict map to Thapar campus area for better UX
+        // VERSION: v7-large-campus-bounds-2024-10-14
+        const bounds = L.latLngBounds(
+          [MAP_CONFIG.center.lat - 0.015, MAP_CONFIG.center.lng - 0.018],  // Southwest (~1650m × 2000m)
+          [MAP_CONFIG.center.lat + 0.015, MAP_CONFIG.center.lng + 0.018]   // Northeast (large campus area)
+        );
+
+        // Create map instance with bounds options
         const map = L.map(mapRef.current, {
-          zoomControl: false // We'll add custom controls
+          zoomControl: false,           // We'll add custom controls
+          maxBounds: bounds,            // Restrict panning to campus area
+          maxBoundsViscosity: 1.0       // Make bounds "sticky" - prevents panning outside
         }).setView(
           [MAP_CONFIG.center.lat, MAP_CONFIG.center.lng],
           MAP_CONFIG.zoom
@@ -122,14 +136,6 @@ export const LeafletMap = memo<LeafletMapProps>(({
         
         tileLayer.addTo(map);
 
-        // Set campus bounds (optional - allows zooming beyond campus)
-        // Uncomment the following lines if you want to restrict map bounds
-        // const bounds = L.latLngBounds(
-        //   [CAMPUS_BOUNDS.south, CAMPUS_BOUNDS.west],
-        //   [CAMPUS_BOUNDS.north, CAMPUS_BOUNDS.east]
-        // );
-        // map.setMaxBounds(bounds);
-
         mapInstanceRef.current = map;
         
         // Add click handler for routing
@@ -146,7 +152,11 @@ export const LeafletMap = memo<LeafletMapProps>(({
 
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try {
+          mapInstanceRef.current.remove();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
         mapInstanceRef.current = null;
         setIsMapLoaded(false);
       }
@@ -573,6 +583,7 @@ export const LeafletMap = memo<LeafletMapProps>(({
 
       {/* Map Container with Accessibility */}
       <div 
+        key="map-v7-large-bounds-final"
         ref={mapRef} 
         className="w-full h-full rounded-lg overflow-hidden"
         role="img"
