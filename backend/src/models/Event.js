@@ -67,6 +67,12 @@ const eventSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'Event creator is required'],
     index: true
+  },
+  status: {
+    type: String,
+    enum: ['draft', 'published', 'cancelled'],
+    default: 'published', // Default to published for backward compatibility
+    required: true
   }
 }, {
   timestamps: true
