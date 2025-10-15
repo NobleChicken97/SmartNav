@@ -12,10 +12,12 @@ const PrivateRoute = memo<PrivateRouteProps>(({
   children, 
   requiredRole 
 }) => {
-  const { user, isLoading } = useAuthStore();
+  const { user, isLoading, _hasCheckedOnce } = useAuthStore();
   const location = useLocation();
 
-  if (isLoading) {
+  // Show loading spinner while checking auth OR before first check completes
+  // This prevents flash of wrong content during initial mount
+  if (isLoading || !_hasCheckedOnce) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />

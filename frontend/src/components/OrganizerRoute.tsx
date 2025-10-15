@@ -14,10 +14,11 @@ interface OrganizerRouteProps {
 }
 
 const OrganizerRoute: React.FC<OrganizerRouteProps> = ({ children }) => {
-  const { user, isLoading } = useAuthStore();
+  const { user, isLoading, _hasCheckedOnce } = useAuthStore();
 
-  // Show loading spinner while checking authentication
-  if (isLoading) {
+  // Show loading spinner while checking auth OR before first check completes
+  // This prevents flash of wrong content during initial mount
+  if (isLoading || !_hasCheckedOnce) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner />
