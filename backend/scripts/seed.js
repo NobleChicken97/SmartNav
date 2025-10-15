@@ -307,28 +307,28 @@ const sampleUsers = [
     name: "Rahul Sharma",
     email: "rahul.sharma@student.thapar.edu",
     password: "Student123",
-    role: "student",
+    role: "user",
     interests: ["ai", "machine-learning", "programming", "technology"]
   },
   {
     name: "Priya Patel",
     email: "priya.patel@student.thapar.edu",
     password: "Student123",
-    role: "student",
+    role: "user",
     interests: ["research", "academic", "writing", "career"]
   },
   {
     name: "Arjun Singh",
     email: "arjun.singh@student.thapar.edu",
     password: "Student123",
-    role: "student",
+    role: "user",
     interests: ["sports", "basketball", "fitness", "competition"]
   },
   {
     name: "Sneha Gupta",
     email: "sneha.gupta@student.thapar.edu",
     password: "Student123",
-    role: "student",
+    role: "user",
     interests: ["culture", "music", "dance", "performance"]
   }
 ];
