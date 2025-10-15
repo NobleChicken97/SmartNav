@@ -133,23 +133,27 @@ export const LeafletMap = memo<LeafletMapProps>(({
       waypointMarker.addTo(mapInstanceRef.current!);
       waypointMarkersRef.current.push(waypointMarker);
       
-      // Show toast notification
-      if (isStart) {
-        toast.success('📍 Start point selected! Click another location for destination', { duration: 2000 });
-      } else {
-        toast.success('🎯 End point selected! Calculating route...', { duration: 2000 });
-      }
-      
       // Limit to 2 waypoints for start/end
+      let updatedWaypoints = newWaypoints;
       if (newWaypoints.length > 2) {
         // Remove the first waypoint marker when replacing
         const oldMarker = waypointMarkersRef.current.shift();
         if (oldMarker && mapInstanceRef.current) {
           mapInstanceRef.current.removeLayer(oldMarker);
         }
-        return [newWaypoints[1], clickPoint]; // Keep the last and new point
+        updatedWaypoints = [newWaypoints[1], clickPoint]; // Keep the last and new point
       }
-      return newWaypoints;
+      
+      // Show toast notification AFTER state update (using setTimeout to defer)
+      setTimeout(() => {
+        if (isStart) {
+          toast.success('📍 Start point selected! Click another location for destination', { duration: 2000 });
+        } else {
+          toast.success('🎯 End point selected! Calculating route...', { duration: 2000 });
+        }
+      }, 0);
+      
+      return updatedWaypoints;
     });
   }, [routingMode, enableRouting]);
 
