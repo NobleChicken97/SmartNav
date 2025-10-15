@@ -114,6 +114,7 @@ export interface Event {
   tags: string[];
   organizer: string;
   createdBy: string | User; // Creator user ID or populated User object
+  status: EventStatus;
   availableSpots?: number;
   isFull?: boolean;
   createdAt: string;
@@ -130,6 +131,8 @@ export type EventCategory =
   | 'social' 
   | 'other';
 
+export type EventStatus = 'draft' | 'published' | 'cancelled';
+
 export interface EventAttendee {
   userId: string;
   registeredAt: string;
@@ -144,6 +147,7 @@ export interface EventFormData {
   capacity: number;
   organizer: string;
   tags: string[];
+  status?: EventStatus; // Optional for create, can be set for edit
 }
 
 export interface EventFilters {
