@@ -55,11 +55,11 @@ const register = asyncHandler(async (req, res) => {
   // Generate token
   const token = generateToken({ id: user._id });
 
-  // Set cookie
+  // Set cookie with strict security settings
   res.cookie(process.env.COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict', // Prevent CSRF attacks
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
@@ -102,11 +102,11 @@ const login = asyncHandler(async (req, res) => {
   // Generate token
   const token = generateToken({ id: user._id });
 
-  // Set cookie
+  // Set cookie with strict security settings
   res.cookie(process.env.COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict', // Prevent CSRF attacks
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
@@ -129,11 +129,11 @@ const login = asyncHandler(async (req, res) => {
  * @access  Private
  */
 const logout = asyncHandler(async (req, res) => {
-  // Clear cookie
+  // Clear cookie with matching security settings
   res.clearCookie(process.env.COOKIE_NAME, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax'
+    sameSite: 'strict' // Must match cookie creation settings
   });
 
   res.json({

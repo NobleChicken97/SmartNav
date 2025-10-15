@@ -157,9 +157,29 @@ eventSchema.statics.findByCreator = function(userId, options = {}) {
     query.dateTime = { $gte: new Date() };
   }
   
-  return this.find(query)
-    .sort({ dateTime: options.upcomingOnly ? 1 : -1 })
-    .populate('locationId', 'name coordinates type');
+  // Build the query chain
+  let queryChain = this.find(query);
+  
+  // Apply custom sort if provided, otherwise default sort
+  if (options.sort) {
+    queryChain = queryChain.sort(options.sort);
+  } else {
+    queryChain = queryChain.sort({ dateTime: options.upcomingOnly ? 1 : -1 });
+  }
+  
+  // Apply populate if provided
+  if (options.populate) {
+    if (Array.isArray(options.populate)) {
+      options.populate.forEach(pop => queryChain = queryChain.populate(pop));
+    } else {
+      queryChain = queryChain.populate(options.populate);
+    }
+  } else {
+    // Default populate
+    queryChain = queryChain.populate('locationId', 'name coordinates type');
+  }
+  
+  return queryChain;
 };
 
 // Instance method to check if user is the creator of the event

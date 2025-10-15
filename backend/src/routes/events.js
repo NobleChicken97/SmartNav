@@ -24,12 +24,14 @@ import { isEventOwner, requireOrganizerOrAdmin } from '../middleware/rbac.js';
 // Public routes (with optional auth for personalization)
 router.get('/', optionalAuth, validateEventQuery, getEvents);
 router.get('/upcoming', getUpcomingEvents);
-router.get('/:id', validateObjectId, getEvent);
 
-// Authenticated routes (all roles)
+// Authenticated routes (all roles) - MUST come BEFORE /:id dynamic route
 router.use(authenticate);
 router.get('/recommended', getRecommendedEvents);
 router.get('/my-events', getMyEvents); // Get events created by current user
+
+// Dynamic ID route - MUST be after specific routes to avoid matching /my-events
+router.get('/:id', validateObjectId, getEvent);
 router.post('/:id/register', validateObjectId, registerForEvent);
 router.delete('/:id/register', validateObjectId, unregisterFromEvent);
 
