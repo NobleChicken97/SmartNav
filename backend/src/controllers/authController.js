@@ -42,12 +42,14 @@ const register = asyncHandler(async (req, res) => {
     });
   }
 
-  // Create user
+  // Create user - Always force 'student' role for security
+  // Only admins can promote users to 'organizer' or 'admin' roles
   const user = await User.create({
     name,
     email,
     password,
-    interests: interests || []
+    interests: interests || [],
+    role: 'student' // Force student role - prevent privilege escalation
   });
 
   // Generate token

@@ -139,8 +139,14 @@ const updateUser = asyncHandler(async (req, res) => {
   }
   
   // Only allow updating certain fields
-  const allowedUpdates = ['name', 'email', 'role'];
+  // Note: 'role' is only added to allowedUpdates if user is an admin
+  const allowedUpdates = ['name', 'email'];
   const updates = {};
+  
+  // Only admins can change user roles (prevent privilege escalation)
+  if (req.user.role === 'admin' && req.body.role !== undefined) {
+    allowedUpdates.push('role');
+  }
   
   allowedUpdates.forEach(field => {
     if (req.body[field] !== undefined) {
