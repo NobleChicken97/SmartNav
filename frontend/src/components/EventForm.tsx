@@ -150,7 +150,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, onSubmit, onCancel, 
           id="title"
           value={formData.title}
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+          className={`mt-1 block w-full px-3 py-2 rounded-md shadow-sm sm:text-sm bg-white text-gray-900 ${
             errors.title
               ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
               : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
@@ -170,7 +170,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, onSubmit, onCancel, 
           rows={4}
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+          className={`mt-1 block w-full px-3 py-2 rounded-md shadow-sm sm:text-sm bg-white text-gray-900 ${
             errors.description
               ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
               : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
@@ -191,7 +191,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, onSubmit, onCancel, 
             id="category"
             value={formData.category}
             onChange={(e) => setFormData({ ...formData, category: e.target.value as EventCategory })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="mt-1 block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white text-gray-900"
           >
             {CATEGORIES.map(cat => (
               <option key={cat.value} value={cat.value}>
@@ -211,7 +211,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, onSubmit, onCancel, 
               id="status"
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value as EventStatus })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white text-gray-900"
             >
               <option value="draft">Draft</option>
               <option value="published">Published</option>
@@ -236,7 +236,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, onSubmit, onCancel, 
             id="locationId"
             value={formData.locationId}
             onChange={(e) => setFormData({ ...formData, locationId: e.target.value })}
-            className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+            className={`mt-1 block w-full px-3 py-2 rounded-md shadow-sm sm:text-sm bg-white text-gray-900 ${
               errors.locationId
                 ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                 : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
@@ -265,7 +265,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, onSubmit, onCancel, 
             id="dateTime"
             value={formData.dateTime}
             onChange={(e) => setFormData({ ...formData, dateTime: e.target.value })}
-            className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+            className={`mt-1 block w-full px-3 py-2 rounded-md shadow-sm sm:text-sm bg-white text-gray-900 ${
               errors.dateTime
                 ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                 : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
@@ -285,7 +285,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, onSubmit, onCancel, 
             min="1"
             value={formData.capacity}
             onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 0 })}
-            className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+            className={`mt-1 block w-full px-3 py-2 rounded-md shadow-sm sm:text-sm bg-white text-gray-900 ${
               errors.capacity
                 ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                 : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
@@ -305,7 +305,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, onSubmit, onCancel, 
           id="organizer"
           value={formData.organizer}
           onChange={(e) => setFormData({ ...formData, organizer: e.target.value })}
-          className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+          className={`mt-1 block w-full px-3 py-2 rounded-md shadow-sm sm:text-sm bg-white text-gray-900 ${
             errors.organizer
               ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
               : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
@@ -328,7 +328,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, onSubmit, onCancel, 
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="block w-full px-3 py-2 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-white text-gray-900"
               placeholder="Add tags (press Enter)"
             />
             <button

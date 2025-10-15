@@ -141,7 +141,7 @@ const EditEventPage = () => {
         <div className="mb-8">
           <button
             onClick={handleCancel}
-            className="mb-4 text-sm text-gray-600 hover:text-gray-900 flex items-center"
+            className="mb-4 text-sm font-medium text-gray-700 hover:text-blue-600 flex items-center transition-colors"
           >
             <svg
               className="w-4 h-4 mr-2"
