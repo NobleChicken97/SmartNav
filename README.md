@@ -193,5 +193,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 💬 Ask questions in [Discussions](https://github.com/NobleChicken97/SmartNav/discussions)
 
 ---
-
+Role-Based access is being worked on currently. Kindly wait.
 **⭐ If you find this project helpful, please consider giving it a star!**
