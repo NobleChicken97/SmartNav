@@ -32,6 +32,8 @@ COPY --from=builder --chown=nginx:nginx /app/dist /usr/share/nginx/html
 
 # Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Replace main nginx.conf to set pid to /tmp (writable in read-only containers)
+COPY nginx-main.conf /etc/nginx/nginx.conf
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/
@@ -41,8 +43,8 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 RUN chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /var/log/nginx && \
     chown -R nginx:nginx /etc/nginx/conf.d && \
-    touch /var/run/nginx.pid && \
-    chown -R nginx:nginx /var/run/nginx.pid
+    touch /tmp/nginx.pid && \
+    chown nginx:nginx /tmp/nginx.pid
 
 # Switch to non-root user
 USER nginx

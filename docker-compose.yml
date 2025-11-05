@@ -75,7 +75,9 @@ services:
     tmpfs:
       - /tmp
       - /var/cache/nginx
-      - /var/run
+      # Note: /var/run left out because it's created with root ownership by tmpfs and
+      # prevents the nginx non-root user from writing the pid file. Using only /tmp
+      # and /var/cache/nginx keeps the container secure while writable by nginx.
 
 volumes:
   mongodb_data:
