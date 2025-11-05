@@ -195,3 +195,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 Role-Based access is being worked on currently. Kindly wait.
 **⭐ If you find this project helpful, please consider giving it a star!**
+
+## Frontend Docker/NGINX notes
+- NGINX runs as non-root in the container; we set PID to /tmp and avoid mounting /var/run as tmpfs so nginx can write its PID file. See rontend/nginx-main.conf and the tmpfs settings in docker-compose.yml.
