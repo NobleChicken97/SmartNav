@@ -345,7 +345,7 @@ const AdminDashboard = () => {
                         ) : (
                           <select
                             value={user.role}
-                            onChange={(e) => handleChangeRole(user._id, e.target.value as any)}
+                            onChange={(e) => handleChangeRole(user._id, e.target.value as 'student' | 'organizer' | 'admin')}
                             disabled={user._id === currentUser?._id || updatingRoleId !== null}
                             className={`text-xs font-medium rounded-full px-2.5 py-0.5 ${getRoleBadgeColor(user.role)} disabled:opacity-50 disabled:cursor-not-allowed`}
                           >

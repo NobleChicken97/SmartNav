@@ -48,8 +48,14 @@ npm run dev
 ```
 
 The application will be available at:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:5000
+
+| Service | Development Mode | Docker Mode |
+|---------|------------------|-------------|
+| **Frontend** | http://localhost:5173 | http://localhost:3000 |
+| **Backend API** | http://localhost:5000 | http://localhost:5000 |
+| **MongoDB** | mongodb://localhost:27017 | mongodb://localhost:27017 |
+
+**Note:** Use development mode (`npm run dev`) for hot-reload during coding, or Docker mode (`docker-compose up`) for production-like testing.
 
 ## 📖 Documentation
 
@@ -193,8 +199,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 💬 Ask questions in [Discussions](https://github.com/NobleChicken97/SmartNav/discussions)
 
 ---
-Role-Based access is being worked on currently. Kindly wait.
 **⭐ If you find this project helpful, please consider giving it a star!**
-
-## Frontend Docker/NGINX notes
-- NGINX runs as non-root in the container; we set PID to /tmp and avoid mounting /var/run as tmpfs so nginx can write its PID file. See rontend/nginx-main.conf and the tmpfs settings in docker-compose.yml.

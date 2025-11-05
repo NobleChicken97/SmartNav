@@ -1,6 +1,6 @@
 ---
-    description: Advanced development workflow rules for AI assistants
-    applyTo: '**'
+description: Advanced development workflow rules for AI assistants
+applyTo: '**'
 ---
 ---
 # Smart Navigator Development Rules
@@ -11,6 +11,7 @@ Advanced guidelines for AI-assisted development ensuring quality and consistency
 - **Security by Design**: Consider security implications in every change
 - **Test-Driven Thinking**: Consider test implications before making changes
 - **Documentation Culture**: Keep documentation current and comprehensive
+- **Confidence Threshold (95%)**: Only apply or auto-complete changes when ≥95% confident; if confidence is lower, ask for clarification or leave a concise TODO with options instead of modifying code.
 
 ## 🔧 Pre-Development Checklist
 Before making ANY code changes:
@@ -53,17 +54,28 @@ export class MapComponent extends React.Component {
 
 ### API Standards
 ```javascript
-// ✅ Good - Proper error handling and validation
+// ✅ Good - Proper error handling and validation (express-validator)
+import { validationResult } from 'express-validator';
+
 export const createLocation = async (req, res, next) => {
   try {
-    const { error } = locationSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ 
-        success: false, 
-        message: error.details[0].message 
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        details: errors.array()
       });
     }
-    // Implementation
+
+    // Implementation (assumes req.body has been validated by middleware)
+    const location = await Location.create(req.body);
+    return res.status(201).json({
+      success: true,
+      message: 'Location created',
+      data: location,
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
     next(error);
   }
@@ -324,40 +336,51 @@ const mapOptions = {
 
 ### Zustand Best Practices
 ```typescript
-// ✅ Good - Well-structured store
+// ✅ Good - Well-structured store (HTTP-only cookies; no token in localStorage)
 interface AuthState {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  token: localStorage.getItem('token'),
   isAuthenticated: false,
-  
+
   login: async (credentials) => {
     try {
-      const response = await authService.login(credentials);
-      set({ 
-        user: response.user, 
-        token: response.token, 
-        isAuthenticated: true 
-      });
-      localStorage.setItem('token', response.token);
+      // Backend sets HttpOnly cookie; response returns user profile
+      const { user } = await authService.login(credentials);
+      set({ user, isAuthenticated: true });
     } catch (error) {
-      // Handle error
+      set({ user: null, isAuthenticated: false });
+      // Handle error (toast/log)
     }
   },
-  
-  logout: () => {
-    set({ user: null, token: null, isAuthenticated: false });
-    localStorage.removeItem('token');
+
+  logout: async () => {
+    try {
+      await authService.logout(); // clears HttpOnly cookie server-side
+    } finally {
+      set({ user: null, isAuthenticated: false });
+    }
   }
 }));
 ```
+
+## 🧾 Commit Message Style (Student-Friendly)
+
+- Keep messages short, clear, and in present tense (3–6 words)
+- Prefer lowercase; optional simple scopes like `api:`, `ui:`, `docs:`
+- One change per commit when possible; commit often
+
+Examples:
+- add login api
+- fix map zoom bug
+- docs: update deployment
+- refactor auth middleware
+- test: events controller
 
 ## 📝 Documentation Standards
 
@@ -378,23 +401,36 @@ export const calculateOptimalRoute = async (
 };
 ```
 
-### API Documentation
-```javascript
-/**
- * @swagger
- * /api/locations:
- *   post:
- *     summary: Create a new location
- *     tags: [Locations]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/LocationCreate'
- */
+### API Documentation (OpenAPI example)
+```yaml
+openapi: 3.0.0
+paths:
+  /api/locations:
+    post:
+      summary: Create a new location
+      tags: [Locations]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, coordinates]
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                coordinates:
+                  type: array
+                  minItems: 2
+                  maxItems: 2
+                  items:
+                    type: number
+      responses:
+        '201':
+          description: Location created
 ```
 
 ---

@@ -18,7 +18,6 @@ import {
   validateEventQuery, 
   validateObjectId 
 } from '../middleware/validation.js';
-import { writeLimiter } from '../middleware/rateLimiter.js';
 import { isEventOwner, requireOrganizerOrAdmin } from '../middleware/rbac.js';
 
 // Public routes (with optional auth for personalization)
@@ -38,14 +37,12 @@ router.delete('/:id/register', validateObjectId, unregisterFromEvent);
 // Organizer and Admin routes - Create events
 router.post('/', 
   requireOrganizerOrAdmin,
-  writeLimiter, 
   validateEvent, 
   createEvent
 );
 
 // Owner or Admin routes - Edit/Delete own events
 router.put('/:id', 
-  writeLimiter,
   validateObjectId, 
   isEventOwner, // Checks ownership or admin
   validateEvent,
@@ -53,7 +50,6 @@ router.put('/:id',
 );
 
 router.delete('/:id', 
-  writeLimiter,
   validateObjectId,
   isEventOwner, // Checks ownership or admin
   deleteEvent

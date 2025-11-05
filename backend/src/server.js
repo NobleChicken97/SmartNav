@@ -8,7 +8,7 @@ import cookieParser from 'cookie-parser';
 import connectDB from './utils/database.js';
 import logger from './utils/logger.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
-import { generalLimiter } from './middleware/rateLimiter.js';
+import limiter from './middleware/rateLimiter.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -87,7 +87,7 @@ app.use(cors({
 }));
 
 // Rate limiting
-app.use(generalLimiter);
+app.use(limiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

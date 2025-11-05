@@ -16,9 +16,10 @@ const CreateEventPage = () => {
       await EventService.createEvent(data);
       alert('Event created successfully!');
       navigate('/organizer/dashboard');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to create event:', error);
-      const message = error.response?.data?.message || 'Failed to create event. Please try again.';
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err.response?.data?.message || 'Failed to create event. Please try again.';
       alert(message);
       throw error; // Re-throw to prevent form from resetting
     }

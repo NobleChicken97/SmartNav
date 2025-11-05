@@ -1,31 +1,18 @@
 FROM node:18-alpine
 
-# Security: Run as non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S backend -u 1001 -G nodejs
-
-# Security: Update packages
-RUN apk update && apk upgrade && apk add --no-cache dumb-init
-
 WORKDIR /app
 
-# Copy package files with correct ownership
-COPY --chown=backend:nodejs package*.json ./
+# Copy package files
+COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --only=production
 
-# Copy source code with correct ownership
-COPY --chown=backend:nodejs . .
+# Copy source code
+COPY . .
 
-# Create uploads directory with correct permissions
-RUN mkdir -p uploads && chown backend:nodejs uploads
-
-# Switch to non-root user
-USER backend
-
-# Security: Use dumb-init for proper signal handling
-ENTRYPOINT ["dumb-init", "--"]
+# Create uploads directory
+RUN mkdir -p uploads
 
 EXPOSE 5000
 

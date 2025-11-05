@@ -30,19 +30,18 @@ interface LeafletMapProps {
 
 export const LeafletMap = memo<LeafletMapProps>(({
   locations = [],
-  events: _events = [],
+  events = [],
   selectedLocation,
   onLocationSelect,
-  onEventSelect: _onEventSelect,
+  onEventSelect,
   className = '',
   enableRouting = false,
   routingMode = false,
 }) => {
-  // TODO: Implement events display and onEventSelect functionality
-  
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const eventMarkersRef = useRef<L.Marker[]>([]); // Separate ref for event markers
   const routingControlRef = useRef<any>(null); // Routing control reference
   const waypointMarkersRef = useRef<L.Marker[]>([]); // Waypoint markers reference
   
@@ -403,53 +402,123 @@ export const LeafletMap = memo<LeafletMapProps>(({
     });
 
     // Add event markers (if provided)
-  if (showEvents && Array.isArray(_events) && _events.length > 0) {
-      _events.forEach((evt) => {
-        // Backend populates evt.locationId with Location when available
-        let coords: Location['coordinates'] | undefined;
-        const locId = (evt as unknown as { locationId?: Location | string }).locationId;
-        if (locId && typeof locId === 'object' && 'coordinates' in locId) {
-          const loc = locId as Location;
-          coords = loc.coordinates;
-        } else {
-          coords = undefined;
-        }
-        if (coords && typeof coords.lat === 'number' && typeof coords.lng === 'number') {
-          const customIcon = L.divIcon({
-            html: `
-              <div style="
-                background: #1e293b; 
-                color: #fff;
-                border-radius: 8px; 
-                padding: 4px 6px; 
-                font-size: 12px;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-                cursor: pointer;
-              ">🎫</div>
-            `,
-            iconSize: [24, 24],
-            iconAnchor: [12, 12],
-            className: 'custom-leaflet-event-marker'
-          });
+    if (showEvents && Array.isArray(events) && events.length > 0) {
+      // Clear existing event markers
+      eventMarkersRef.current.forEach(marker => {
+        mapInstanceRef.current?.removeLayer(marker);
+      });
+      eventMarkersRef.current = [];
 
-          const marker = L.marker([coords.lat, coords.lng], { icon: customIcon });
-          marker.bindPopup(`
-            <div style="padding: 10px; min-width: 200px; font-family: Inter, sans-serif;">
-              <h3 style="font-size: 15px; font-weight: 600; margin: 0 0 6px 0; color: #1f2937;">${evt.title ?? 'Event'}</h3>
-              <p style="font-size: 13px; color: #6b7280; margin: 0 0 8px 0;">${evt.description ?? ''}</p>
-              <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#334155;">
-                <span>${evt.category ?? ''}</span>
-                <span>${evt.dateTime ? new Date(evt.dateTime).toLocaleString() : ''}</span>
+      events.forEach((event: Event) => {
+        // Get coordinates from event's location
+        let coords: Location['coordinates'] | undefined;
+        
+        // Check if locationId is populated as a Location object
+        if (event.locationId && typeof event.locationId === 'object' && 'coordinates' in event.locationId) {
+          coords = event.locationId.coordinates;
+        }
+        
+        if (!coords) return; // Skip if no valid coordinates
+
+        // Create custom icon for events (different from locations)
+        const eventIcon = L.divIcon({
+          html: `
+            <div style="
+              background: linear-gradient(135deg, #ec4899, #8b5cf6); 
+              border-radius: 50%; 
+              width: 38px; 
+              height: 38px; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              border: 3px solid white; 
+              font-size: 20px;
+              box-shadow: 0 3px 8px rgba(236, 72, 153, 0.4);
+              cursor: pointer;
+              transition: transform 0.2s;
+            " 
+            onmouseover="this.style.transform='scale(1.1)'"
+            onmouseout="this.style.transform='scale(1)'">�</div>
+          `,
+          iconSize: [38, 38],
+          iconAnchor: [19, 19],
+          popupAnchor: [0, -19],
+          className: 'custom-event-marker'
+        });
+
+        const marker = L.marker([coords.lat, coords.lng], { icon: eventIcon });
+
+        // Format date/time
+        const eventDate = new Date(event.dateTime);
+        const formattedDate = eventDate.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        });
+        const formattedTime = eventDate.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+
+        // Calculate available spots
+        const registeredCount = event.attendees?.length || 0;
+        const availableSpots = event.capacity - registeredCount;
+        const isFull = availableSpots <= 0;
+
+        // Create enhanced popup
+        marker.bindPopup(`
+          <div style="padding: 14px; min-width: 220px; max-width: 280px; font-family: Inter, sans-serif;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+              <span style="font-size: 22px;">🎉</span>
+              <h3 style="font-size: 16px; font-weight: 700; margin: 0; color: #1f2937; flex: 1;">${event.title}</h3>
+            </div>
+            
+            <p style="font-size: 13px; color: #4b5563; margin: 0 0 12px 0; line-height: 1.5;">${event.description || 'No description available'}</p>
+            
+            <div style="background: #f3f4f6; border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                <span style="font-size: 14px;">📅</span>
+                <span style="font-size: 13px; color: #374151; font-weight: 500;">${formattedDate}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 14px;">⏰</span>
+                <span style="font-size: 13px; color: #374151; font-weight: 500;">${formattedTime}</span>
               </div>
             </div>
-          `);
+            
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+              <span style="background: #dbeafe; color: #1e40af; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase;">${event.category}</span>
+              ${isFull ? 
+                '<span style="background: #fee2e2; color: #991b1b; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">FULL</span>' :
+                `<span style="background: #d1fae5; color: #065f46; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600;">${availableSpots} spots left</span>`
+              }
+            </div>
+            
+            ${typeof event.locationId === 'object' && event.locationId.name ? 
+              `<div style="font-size: 12px; color: #6b7280; display: flex; align-items: center; gap: 4px;">
+                <span>📍</span>
+                <span>${event.locationId.name}</span>
+              </div>` : ''
+            }
+          </div>
+        `, {
+          closeButton: true,
+          maxWidth: 280,
+          className: 'event-popup'
+        });
 
-          marker.addTo(mapInstanceRef.current!);
-          markersRef.current.push(marker);
-  }
+        // Add click handler for event selection
+        if (onEventSelect) {
+          marker.on('click', () => {
+            onEventSelect(event);
+          });
+        }
+
+        marker.addTo(mapInstanceRef.current!);
+        eventMarkersRef.current.push(marker);
       });
     }
-  }, [filteredLocations, _events, handleLocationSelect, showEvents]);
+  }, [filteredLocations, events, handleLocationSelect, onEventSelect, showEvents]);
 
   // Handle selected location
   useEffect(() => {

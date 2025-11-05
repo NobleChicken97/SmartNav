@@ -6,7 +6,7 @@ services:
     container_name: smart-navigator-mongo
     restart: unless-stopped
     ports:
-      - "127.0.0.1:27017:27017"  # Bind to localhost only
+      - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-secure_password_change_me}
@@ -14,13 +14,6 @@ services:
       - mongodb_data:/data/db
     networks:
       - smart-navigator-network
-    security_opt:
-      - no-new-privileges:true
-    user: "999:999"  # Run as non-root user
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /var/log/mongodb
 
   backend:
     build: 
@@ -29,7 +22,7 @@ services:
     container_name: smart-navigator-backend
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5000:5000"  # Bind to localhost only
+      - "5000:5000"
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       MONGODB_URI: mongodb://admin:${MONGO_PASSWORD:-secure_password_change_me}@mongodb:27017/smart-navigator?authSource=admin
@@ -43,12 +36,6 @@ services:
       - /app/node_modules
     networks:
       - smart-navigator-network
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /app/uploads
 
   frontend:
     build:
@@ -57,7 +44,7 @@ services:
     container_name: smart-navigator-frontend
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3000:3000"  # Bind to localhost only
+      - "3000:3000"
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5000}
       VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
@@ -69,15 +56,6 @@ services:
       - /app/node_modules
     networks:
       - smart-navigator-network
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /var/cache/nginx
-      # Note: /var/run left out because it's created with root ownership by tmpfs and
-      # prevents the nginx non-root user from writing the pid file. Using only /tmp
-      # and /var/cache/nginx keeps the container secure while writable by nginx.
 
 volumes:
   mongodb_data:

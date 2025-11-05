@@ -17,7 +17,6 @@ import {
   validateLocationQuery, 
   validateObjectId 
 } from '../middleware/validation.js';
-import { writeLimiter, uploadLimiter } from '../middleware/rateLimiter.js';
 import { requireAdmin } from '../middleware/rbac.js';
 
 // Configure multer for CSV uploads
@@ -44,7 +43,6 @@ router.get('/:id', validateObjectId, getLocation);
 router.post('/', 
   authenticate,
   requireAdmin,
-  writeLimiter, 
   validateLocation, 
   createLocation
 );
@@ -52,7 +50,6 @@ router.post('/',
 router.put('/:id', 
   authenticate,
   requireAdmin,
-  writeLimiter, 
   validateObjectId, 
   validateLocation, 
   updateLocation
@@ -61,7 +58,6 @@ router.put('/:id',
 router.delete('/:id', 
   authenticate,
   requireAdmin,
-  writeLimiter, 
   validateObjectId, 
   deleteLocation
 );
@@ -69,7 +65,6 @@ router.delete('/:id',
 router.post('/import', 
   authenticate,
   requireAdmin,
-  uploadLimiter, 
   upload.single('csv'), 
   importLocations
 );

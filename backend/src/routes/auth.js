@@ -7,7 +7,6 @@
  * @requires ../controllers/authController
  * @requires ../middleware/auth
  * @requires ../middleware/validation
- * @requires ../middleware/rateLimiter
  */
 
 import express from 'express';
@@ -21,7 +20,6 @@ import {
 } from '../controllers/authController.js';
 import { authenticate } from '../middleware/auth.js';
 import { validateRegister, validateLogin } from '../middleware/validation.js';
-import { authLimiter } from '../middleware/rateLimiter.js';
 
 /**
  * @swagger
@@ -47,7 +45,7 @@ import { authLimiter } from '../middleware/rateLimiter.js';
  *           description: User's email address
  *         role:
  *           type: string
- *           enum: [student, admin]
+ *           enum: [student, organizer, admin]
  *           description: User's role in the system
  *         isEmailVerified:
  *           type: boolean
@@ -82,9 +80,9 @@ import { authLimiter } from '../middleware/rateLimiter.js';
  *           description: Strong password (min 8 chars, uppercase, lowercase, number, special char)
  *         role:
  *           type: string
- *           enum: [student, admin]
+ *           enum: [student, organizer, admin]
  *           default: student
- *           description: User role
+ *           description: User role (student, organizer, or admin)
  *     LoginRequest:
  *       type: object
  *       required:
@@ -137,11 +135,28 @@ import { authLimiter } from '../middleware/rateLimiter.js';
  *         application/json:
  *           schema:
  *             $ref: '#/components/schemas/RegisterRequest'
- *           example:
- *             name: "John Doe"
- *             email: "john.doe@thapar.edu"
- *             password: "SecurePass123!"
- *             role: "student"
+ *           examples:
+ *             student:
+ *               summary: Register as student
+ *               value:
+ *                 name: "Rajesh Kumar"
+ *                 email: "rajesh.kumar@thapar.edu"
+ *                 password: "SecurePass123!"
+ *                 role: "student"
+ *             organizer:
+ *               summary: Register as organizer
+ *               value:
+ *                 name: "Priya Sharma"
+ *                 email: "priya.sharma@thapar.edu"
+ *                 password: "OrganizerPass456!"
+ *                 role: "organizer"
+ *             admin:
+ *               summary: Register as admin
+ *               value:
+ *                 name: "Dr. Admin Singh"
+ *                 email: "admin.singh@thapar.edu"
+ *                 password: "AdminSecure789!"
+ *                 role: "admin"
  *     responses:
  *       201:
  *         description: User registered successfully
@@ -157,7 +172,7 @@ import { authLimiter } from '../middleware/rateLimiter.js';
  *         description: Internal server error
  */
 // Public routes
-router.post('/register', authLimiter, validateRegister, register);
+router.post('/register', validateRegister, register);
 
 /**
  * @swagger
@@ -194,7 +209,7 @@ router.post('/register', authLimiter, validateRegister, register);
  *       500:
  *         description: Internal server error
  */
-router.post('/login', authLimiter, validateLogin, login);
+router.post('/login', validateLogin, login);
 
 // Private routes - require authentication
 router.use(authenticate);

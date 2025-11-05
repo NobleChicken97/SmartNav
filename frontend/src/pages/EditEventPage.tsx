@@ -45,9 +45,10 @@ const EditEventPage = () => {
       }
 
       setEvent(eventData);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to load event:', error);
-      setError(error.response?.data?.message || 'Failed to load event');
+      const err = error as { response?: { data?: { message?: string } } };
+      setError(err.response?.data?.message || 'Failed to load event');
     } finally {
       setLoading(false);
     }
@@ -60,9 +61,10 @@ const EditEventPage = () => {
       await EventService.updateEvent(id, data);
       alert('Event updated successfully!');
       navigate('/organizer/dashboard');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to update event:', error);
-      const message = error.response?.data?.message || 'Failed to update event. Please try again.';
+      const err = error as { response?: { data?: { message?: string } } };
+      const message = err.response?.data?.message || 'Failed to update event. Please try again.';
       alert(message);
       throw error; // Re-throw to prevent form from resetting
     }
