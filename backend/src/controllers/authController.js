@@ -55,11 +55,11 @@ const register = asyncHandler(async (req, res) => {
   // Generate token
   const token = generateToken({ id: user._id });
 
-  // Set cookie with strict security settings
+  // Set cookie with security settings for cross-origin (Vercel <-> Railway)
   res.cookie(process.env.COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // lax in dev for better compatibility
+    secure: true, // Always true for production HTTPS
+    sameSite: 'none', // Required for cross-site cookies (Vercel -> Railway)
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
@@ -102,11 +102,11 @@ const login = asyncHandler(async (req, res) => {
   // Generate token
   const token = generateToken({ id: user._id });
 
-  // Set cookie with strict security settings
+  // Set cookie with security settings for cross-origin (Vercel <-> Railway)
   res.cookie(process.env.COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // lax in dev for better compatibility
+    secure: true, // Always true for production HTTPS
+    sameSite: 'none', // Required for cross-site cookies (Vercel -> Railway)
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
