@@ -81,9 +81,10 @@ cookies.txt
 .github/
 COMPREHENSIVE_ANALYSIS.md
 
-# Markdown files - Ignore all except README.md
+# Markdown files - Ignore all except README.md and deployment guides
 *.md
 !README.md
+!DEPLOYMENT_GUIDE.md
 
 # Note: .env files and .vscode/ settings ARE INCLUDED (private repo)
 # Note: All project source files, configs, and documentation WILL BE PUSHED
