@@ -276,22 +276,6 @@ const LoginPage: React.FC = () => {
             </p>
           </div>
         </form>
-
-        {/* Demo Credentials */}
-  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-          <div className="flex">
-            <svg className="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">Demo Credentials</h3>
-              <div className="mt-2 text-sm text-yellow-700">
-                <p><strong>Student:</strong> student@thapar.edu / password</p>
-                <p><strong>Admin:</strong> admin@thapar.edu / password</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
