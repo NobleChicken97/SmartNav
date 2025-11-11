@@ -7,6 +7,7 @@ import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 import 'leaflet-routing-machine';
 import { MAP_CONFIG, MARKER_ICONS } from '../../config/mapConfig';
 import { Location, Event } from '../../types';
+import { EventService } from '../../services/eventService';
 
 // Fix for default markers in Leaflet with Webpack/Vite (avoid explicit any)
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
@@ -403,8 +404,15 @@ export const LeafletMap = memo<LeafletMapProps>(({
 
     // Add event markers (if provided)
     if (showEvents && Array.isArray(events) && events.length > 0) {
-      console.log('🗺️ LeafletMap: Rendering', events.length, 'event markers');
-      console.log('🗺️ LeafletMap: Event titles:', events.map(e => e.title));
+      // Filter to show only upcoming and ongoing events (exclude completed and cancelled)
+      const activeEvents = events.filter(event => {
+        if (event.status === 'cancelled') return false;
+        const status = EventService.getEventStatus(event);
+        return status === 'upcoming' || status === 'ongoing';
+      });
+      
+      console.log('🗺️ LeafletMap: Rendering', activeEvents.length, 'active event markers (out of', events.length, 'total)');
+      console.log('🗺️ LeafletMap: Event titles:', activeEvents.map(e => e.title));
       
       // Clear existing event markers
       eventMarkersRef.current.forEach(marker => {
@@ -412,7 +420,7 @@ export const LeafletMap = memo<LeafletMapProps>(({
       });
       eventMarkersRef.current = [];
 
-      events.forEach((event: Event) => {
+      activeEvents.forEach((event: Event) => {
         // Get coordinates from event's location
         let coords: Location['coordinates'] | undefined;
         
