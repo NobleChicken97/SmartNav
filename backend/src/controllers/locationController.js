@@ -1,4 +1,13 @@
-import Location from '../models/Location.js';
+import {
+  createLocation as createLocationRepo,
+  findLocationById,
+  updateLocation as updateLocationRepo,
+  deleteLocation as deleteLocationRepo,
+  listLocations,
+  searchLocations,
+  findWithinBounds,
+  findNearby
+} from '../repositories/locationRepository.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import csv from 'csv-parser';
 import fs from 'fs';
@@ -9,44 +18,46 @@ import fs from 'fs';
  * @access  Public
  */
 const getLocations = asyncHandler(async (req, res) => {
-  const { q, type, north, south, east, west, limit = 100, page = 1 } = req.query;
+  const { q, type, north, south, east, west, limit = 100 } = req.query;
   
-  let query = {};
+  let locations;
   
-  // Text search
-  if (q) {
-    query.$text = { $search: q };
-  }
-  
-  // Filter by type
-  if (type) {
-    query.type = type;
-  }
-  
-  // Bounding box filter
+  // Bounding box filter takes priority
   if (north && south && east && west) {
-    query['coordinates.lat'] = { $gte: parseFloat(south), $lte: parseFloat(north) };
-    query['coordinates.lng'] = { $gte: parseFloat(west), $lte: parseFloat(east) };
+    const bounds = {
+      north: parseFloat(north),
+      south: parseFloat(south),
+      east: parseFloat(east),
+      west: parseFloat(west)
+    };
+    locations = await findWithinBounds(bounds);
+    
+    // Apply type filter if specified
+    if (type) {
+      locations = locations.filter(loc => loc.type === type.toLowerCase());
+    }
   }
-  
-  const skip = (parseInt(page) - 1) * parseInt(limit);
-  
-  const locations = await Location.find(query)
-    .populate('buildingId', 'name type')
-    .sort(q ? { score: { $meta: 'textScore' } } : { name: 1 })
-    .limit(parseInt(limit))
-    .skip(skip);
-  
-  const total = await Location.countDocuments(query);
+  // Text search
+  else if (q) {
+    locations = await searchLocations(q, { 
+      limit: parseInt(limit),
+      type: type ? type.toLowerCase() : undefined
+    });
+  }
+  // List with filters
+  else {
+    locations = await listLocations({ 
+      type: type ? type.toLowerCase() : undefined,
+      limit: parseInt(limit)
+    });
+  }
   
   res.json({
     success: true,
     data: {
       locations,
       pagination: {
-        current: parseInt(page),
-        pages: Math.ceil(total / parseInt(limit)),
-        total
+        total: locations.length
       }
     }
   });
@@ -58,9 +69,7 @@ const getLocations = asyncHandler(async (req, res) => {
  * @access  Public
  */
 const getLocation = asyncHandler(async (req, res) => {
-  const location = await Location.findById(req.params.id)
-    .populate('buildingId', 'name type coordinates')
-    .populate('roomsInBuilding', 'name type floor');
+  const location = await findLocationById(req.params.id);
   
   if (!location) {
     return res.status(404).json({
@@ -81,7 +90,7 @@ const getLocation = asyncHandler(async (req, res) => {
  * @access  Private (Admin only)
  */
 const createLocation = asyncHandler(async (req, res) => {
-  const location = await Location.create(req.body);
+  const location = await createLocationRepo(req.body);
   
   res.status(201).json({
     success: true,
@@ -96,27 +105,23 @@ const createLocation = asyncHandler(async (req, res) => {
  * @access  Private (Admin only)
  */
 const updateLocation = asyncHandler(async (req, res) => {
-  const location = await Location.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    {
-      new: true,
-      runValidators: true
-    }
-  );
-  
-  if (!location) {
-    return res.status(404).json({
-      success: false,
-      message: 'Location not found'
+  try {
+    const location = await updateLocationRepo(req.params.id, req.body);
+    
+    res.json({
+      success: true,
+      message: 'Location updated successfully',
+      data: { location }
     });
+  } catch (error) {
+    if (error.message === 'Location not found') {
+      return res.status(404).json({
+        success: false,
+        message: 'Location not found'
+      });
+    }
+    throw error;
   }
-  
-  res.json({
-    success: true,
-    message: 'Location updated successfully',
-    data: { location }
-  });
 });
 
 /**
@@ -125,21 +130,22 @@ const updateLocation = asyncHandler(async (req, res) => {
  * @access  Private (Admin only)
  */
 const deleteLocation = asyncHandler(async (req, res) => {
-  const location = await Location.findById(req.params.id);
-  
-  if (!location) {
-    return res.status(404).json({
-      success: false,
-      message: 'Location not found'
+  try {
+    await deleteLocationRepo(req.params.id);
+    
+    res.json({
+      success: true,
+      message: 'Location deleted successfully'
     });
+  } catch (error) {
+    if (error.message === 'Location not found') {
+      return res.status(404).json({
+        success: false,
+        message: 'Location not found'
+      });
+    }
+    throw error;
   }
-  
-  await location.deleteOne();
-  
-  res.json({
-    success: true,
-    message: 'Location deleted successfully'
-  });
 });
 
 /**
@@ -157,7 +163,7 @@ const getNearbyLocations = asyncHandler(async (req, res) => {
     });
   }
   
-  const locations = await Location.findNearby(
+  const locations = await findNearby(
     parseFloat(lat),
     parseFloat(lng),
     parseInt(maxDistance)
@@ -246,15 +252,24 @@ const importLocations = asyncHandler(async (req, res) => {
             });
           }
           
-          // Insert locations
-          const insertedLocations = await Location.insertMany(locations);
+          // Insert locations one by one (Firestore doesn't have insertMany)
+          const insertedLocations = [];
+          for (const locationData of locations) {
+            try {
+              const inserted = await createLocationRepo(locationData);
+              insertedLocations.push(inserted);
+            } catch (err) {
+              errors.push(`Failed to insert location '${locationData.name}': ${err.message}`);
+            }
+          }
           
           res.status(201).json({
             success: true,
             message: `Successfully imported ${insertedLocations.length} locations`,
             data: {
               imported: insertedLocations.length,
-              locations: insertedLocations
+              locations: insertedLocations,
+              errors: errors.length > 0 ? errors : undefined
             }
           });
         } catch (error) {

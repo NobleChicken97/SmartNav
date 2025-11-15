@@ -10,12 +10,12 @@ import {
   updateUser,
   deleteUser
 } from '../controllers/userController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticateFirebase } from '../middleware/firebaseAuth.js';
 import { validateProfileUpdate, validateObjectId } from '../middleware/validation.js';
 import { requireAdmin, canModifyUser } from '../middleware/rbac.js';
 
 // All user routes require authentication
-router.use(authenticate);
+router.use(authenticateFirebase);
 
 // User profile routes (self-service)
 router.get('/profile', getProfile);

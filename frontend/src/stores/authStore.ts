@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { AuthService } from '../services/authService';
 import { logger } from '../utils/logger';
 import { User, LoginCredentials, RegisterData, Event } from '../types';
+import { auth } from '../config/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import { 
   isAdmin, 
   isOrganizer, 
@@ -45,9 +47,9 @@ interface AuthActions {
 type AuthStore = AuthState & AuthActions;
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
-  // Initial state
+  // Initial state - start with loading:true to prevent flash
   user: null,
-  isLoading: false,
+  isLoading: true, // Start as true, Firebase listener will update
   error: null,
   isAuthenticated: false,
   _hasCheckedOnce: false,
@@ -55,29 +57,31 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   // Actions
   login: async (credentials: LoginCredentials) => {
     try {
-  logger.log('🔐 Auth Store: Starting login process', credentials.email);
+      logger.log('🔐 Auth Store: Starting login process', credentials.email);
       set({ isLoading: true, error: null });
       
-  logger.log('🔐 Auth Store: Calling AuthService.login...');
-      const user = await AuthService.login(credentials);
-  logger.log('🔐 Auth Store: Login successful, user received:', user);
+      logger.log('🔐 Auth Store: Calling AuthService.login (Firebase only)...');
+      await AuthService.login(credentials);
+      logger.log('🔐 Auth Store: Firebase sign-in successful');
+      logger.log('🔐 Auth Store: onAuthStateChanged will handle user state update');
+      
+      // Don't set state here - onAuthStateChanged listener will handle it
+      // Just clear loading state
+      set({ isLoading: false });
+      
+    } catch (error) {
+      logger.error('🔐 Auth Store: Login failed:', error);
+      
+      // Use error message from AuthService (already user-friendly)
+      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
       
       set({ 
-        user, 
-        isAuthenticated: true, 
-        isLoading: false,
-        error: null 
-      });
-  logger.log('🔐 Auth Store: State updated successfully');
-    } catch (error) {
-  logger.error('🔐 Auth Store: Login failed:', error);
-      set({ 
-        error: error instanceof Error ? error.message : 'Login failed',
+        error: errorMessage,
         isLoading: false,
         user: null,
         isAuthenticated: false
       });
-      throw error;
+      // Don't re-throw - error is already set in state for UI to display
     }
   },
 
@@ -92,13 +96,16 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         error: null 
       });
     } catch (error) {
+      // Use error message from AuthService (already user-friendly)
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed. Please try again.';
+      
       set({ 
-        error: error instanceof Error ? error.message : 'Registration failed',
+        error: errorMessage,
         isLoading: false,
         user: null,
         isAuthenticated: false
       });
-      throw error;
+      // Don't re-throw - error is already set in state for UI to display
     }
   },
 
@@ -126,55 +133,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   checkAuth: async () => {
-    // Prevent multiple simultaneous auth checks (e.g., StrictMode double-invoke)
-    const state = get();
-    
-    logger.log('🔍 Auth Store: checkAuth called. Current state:', {
-      isLoading: state.isLoading,
-      hasUser: !!state.user,
-      _hasCheckedOnce: state._hasCheckedOnce
-    });
-    
-    if (state.isLoading) {
-      logger.log('🔍 Auth Store: Auth check already in progress, skipping');
-      return;
-    }
-
-    // Skip if already checked AND user is authenticated (session valid)
-    // But allow recheck if user is null (could be new tab/page reload)
-    if (state._hasCheckedOnce && state.user !== null) {
-      logger.log('🔍 Auth Store: Auth already verified, skipping');
-      return;
-    }
-
-    try {
-      logger.log('🔍 Auth Store: Starting auth check...');
-      set({ isLoading: true });
-      
-      // Try to get current user (cookie is sent automatically with request)
-      logger.log('🔍 Auth Store: Calling getCurrentUser API...');
-      const user = await AuthService.getCurrentUser();
-      logger.log('🔍 Auth Store: Auth check successful, user:', user);
-      set({ 
-        user, 
-        isAuthenticated: true, 
-        isLoading: false,
-        error: null,
-        _hasCheckedOnce: true,
-      });
-      logger.log('🔍 Auth Store: State updated - authenticated');
-  } catch (error) {
-      // No valid session - treat as guest (expected for non-logged-in users)
-      logger.log('🔍 Auth Store: Not authenticated (no valid session cookie)', error);
-      set({ 
-        user: null, 
-        isAuthenticated: false, 
-        isLoading: false,
-        error: null,
-        _hasCheckedOnce: true,
-      });
-      logger.log('🔍 Auth Store: State updated - guest mode');
-    }
+    // This is now a no-op - Firebase onAuthStateChanged handles everything
+    // Kept for backwards compatibility but does nothing
+    // The auth state is managed by the onAuthStateChanged listener below
+    logger.log('🔍 Auth Store: checkAuth called (no-op, Firebase listener handles auth)');
   },
 
   clearError: () => {
@@ -231,3 +193,42 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     return canViewEventRegistrations(user, event);
   },
 }));
+
+// Listen to Firebase auth state changes
+// This is the primary auth mechanism - fires immediately on page load
+onAuthStateChanged(auth, async (firebaseUser) => {
+  logger.log('🔥 Firebase Auth State Changed:', firebaseUser?.email || 'No user');
+  
+  if (firebaseUser) {
+    // User signed in - fetch user data from backend
+    try {
+      const user = await AuthService.getCurrentUser();
+      useAuthStore.setState({ 
+        user, 
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+        _hasCheckedOnce: true
+      });
+    } catch (error) {
+      logger.error('🔥 Failed to fetch user data:', error);
+      // Firebase user exists but backend fetch failed - clear state
+      useAuthStore.setState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+        _hasCheckedOnce: true
+      });
+    }
+  } else {
+    // User signed out or not logged in
+    useAuthStore.setState({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+      _hasCheckedOnce: true
+    });
+  }
+});

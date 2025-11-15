@@ -6,7 +6,7 @@
 [![ES Modules](https://img.shields.io/badge/ES%20Modules-✓-green)](https://github.com/NobleChicken97/SmartNav)
 [![React](https://img.shields.io/badge/React-18-blue)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-ES%20Modules-green)](https://nodejs.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248)](https://www.mongodb.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-Firestore-FFCA28)](https://firebase.google.com/)
 
 > A comprehensive web application that helps students, faculty, and visitors navigate Thapar University campus with interactive maps, location search, and real-time information.
 
@@ -21,7 +21,7 @@
 - 🎯 **Categories** - Buildings, rooms, dining, recreation, events, and more
 - 👥 **Role-Based Access** - Student, Organizer, and Admin roles with proper permissions
 - 📱 **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
-- 🔒 **Secure API** - JWT authentication with HTTP-only cookies
+- 🔒 **Secure API** - Firebase Authentication with ID token verification
 - ⚡ **Modern Tech Stack** - React 18, TypeScript, Node.js with ES Modules
 - 📚 **API Documentation** - Complete Swagger/OpenAPI documentation
 
@@ -29,7 +29,7 @@
 
 ### Prerequisites
 - Node.js 16+ 
-- MongoDB Atlas account (or local MongoDB)
+- Firebase project (free tier available)
 - Git
 
 ### Installation
@@ -57,7 +57,6 @@ The application will be available at:
 |---------|------------------|-------------|
 | **Frontend** | http://localhost:5173 | http://localhost:3000 |
 | **Backend API** | http://localhost:5000 | http://localhost:5000 |
-| **MongoDB** | mongodb://localhost:27017 | mongodb://localhost:27017 |
 
 **Note:** Use development mode (`npm run dev`) for hot-reload during coding, or Docker mode (`docker-compose up`) for production-like testing.
 
@@ -81,9 +80,8 @@ The application will be available at:
 ### Backend  
 - **Node.js** with ES Modules
 - **Express.js** web framework
-- **MongoDB** with Mongoose ODM
-- **JWT** for authentication
-- **bcryptjs** for password hashing
+- **Firebase** (Firestore + Authentication)
+- **Firebase Admin SDK** for server-side operations
 - **Multer** for file uploads
 
 ### DevOps & Quality
@@ -101,7 +99,7 @@ SmartNavigator/
 ├── 📁 backend/                 # Node.js + Express API
 │   ├── src/
 │   │   ├── controllers/        # Route handlers
-│   │   ├── models/            # MongoDB schemas  
+│   │   ├── repositories/       # Firestore data access  
 │   │   ├── routes/            # API routes
 │   │   ├── middleware/        # Custom middleware
 │   │   └── utils/             # Helper functions

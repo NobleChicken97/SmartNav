@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { LoginCredentials } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -22,7 +23,8 @@ const LoginPage: React.FC = () => {
   const from = state?.from?.pathname;
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    // Only redirect if authenticated AND no error
+    if (isAuthenticated && user && !error) {
       // Determine redirect path based on role
       let redirectPath = from;
       
@@ -39,11 +41,13 @@ const LoginPage: React.FC = () => {
       
       navigate(redirectPath, { replace: true });
     }
-  }, [isAuthenticated, user, navigate, from, isAdmin, isOrganizer]);
+  }, [isAuthenticated, user, error, navigate, from, isAdmin, isOrganizer]);
 
+  // Clear errors only when component unmounts, not on mount
   useEffect(() => {
-    // Clear any previous errors when component mounts
-    clearError();
+    return () => {
+      clearError();
+    };
   }, [clearError]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,12 +70,8 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    try {
-      await login(formData);
-      // Navigation will be handled by useEffect
-    } catch {
-      // Error is handled by the store
-    }
+    await login(formData);
+    // Navigation will be handled by useEffect after successful login
   };
 
   const isFormValid = formData.email && formData.password;
@@ -261,6 +261,19 @@ const LoginPage: React.FC = () => {
                 )}
               </button>
             </div>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              </div>
+            </div>
+
+            {/* Google Sign-In */}
+            <GoogleSignInButton />
           </div>
 
           {/* Sign Up Link */}

@@ -5,7 +5,6 @@ import { fileURLToPath } from 'url';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import connectDB from './utils/database.js';
 import logger from './utils/logger.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import limiter from './middleware/rateLimiter.js';
@@ -19,9 +18,6 @@ import userRoutes from './routes/users.js';
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Connect to database
-connectDB();
 
 const app = express();
 

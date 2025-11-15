@@ -1,31 +1,38 @@
-import { useEffect } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import LoadingSpinner from './components/LoadingSpinner';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
 import OrganizerRoute from './components/OrganizerRoute';
-import MapPage from './pages/MapPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { RouteErrorBoundary } from './components/SpecializedErrorBoundaries';
 import { Toaster } from 'react-hot-toast';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import OrganizerDashboard from './pages/OrganizerDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import CreateEventPage from './pages/CreateEventPage';
-import EditEventPage from './pages/EditEventPage';
+
+// Lazy load pages for better initial load performance
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const MapPage = lazy(() => import('./pages/MapPage'));
+const OrganizerDashboard = lazy(() => import('./pages/OrganizerDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const CreateEventPage = lazy(() => import('./pages/CreateEventPage'));
+const EditEventPage = lazy(() => import('./pages/EditEventPage'));
+
+// Reusable loading component for lazy routes
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <LoadingSpinner size="lg" />
+  </div>
+);
 
 function App() {
-  const { checkAuth, isLoading } = useAuthStore();
+  const { isLoading, _hasCheckedOnce } = useAuthStore();
 
-  // Check authentication status on app load
-  useEffect(() => {
-    checkAuth();
-    // checkAuth is stable in Zustand; include to satisfy lint
-  }, [checkAuth]);
+  // Firebase onAuthStateChanged listener handles auth automatically
+  // No need to call checkAuth() - it would be redundant
 
-  if (isLoading) {
+  // Show loading screen only during initial Firebase auth check
+  if (isLoading || !_hasCheckedOnce) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -41,49 +48,50 @@ function App() {
       }}
     >
       <div className="App">
-  <Toaster position="top-right" />
+        <Toaster position="top-right" />
         <ErrorBoundary>
-        <Routes>
-          {/* Public Routes */}
-          <Route 
-            path="/login" 
-            element={
-              <RouteErrorBoundary routeName="Login">
-                <LoginPage />
-              </RouteErrorBoundary>
-            } 
-          />
-          <Route 
-            path="/register" 
-            element={
-              <RouteErrorBoundary routeName="Register">
-                <RegisterPage />
-              </RouteErrorBoundary>
-            } 
-          />
-          
-          {/* Protected Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <RouteErrorBoundary routeName="Dashboard">
-                <PrivateRoute>
-                  <MapPage />
-                </PrivateRoute>
-              </RouteErrorBoundary>
-            }
-          />
-          
-          <Route
-            path="/map"
-            element={
-              <RouteErrorBoundary routeName="Map">
-                <PrivateRoute>
-                  <MapPage />
-                </PrivateRoute>
-              </RouteErrorBoundary>
-            }
-          />
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/* Public Routes */}
+              <Route 
+                path="/login" 
+                element={
+                  <RouteErrorBoundary routeName="Login">
+                    <LoginPage />
+                  </RouteErrorBoundary>
+                } 
+              />
+              <Route 
+                path="/register" 
+                element={
+                  <RouteErrorBoundary routeName="Register">
+                    <RegisterPage />
+                  </RouteErrorBoundary>
+                } 
+              />
+              
+              {/* Protected Routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <RouteErrorBoundary routeName="Dashboard">
+                    <PrivateRoute>
+                      <MapPage />
+                    </PrivateRoute>
+                  </RouteErrorBoundary>
+                }
+              />
+              
+              <Route
+                path="/map"
+                element={
+                  <RouteErrorBoundary routeName="Map">
+                    <PrivateRoute>
+                      <MapPage />
+                    </PrivateRoute>
+                  </RouteErrorBoundary>
+                }
+              />
 
           {/* Organizer Routes */}
           <Route
@@ -152,8 +160,9 @@ function App() {
               </div>
             }
           />
-  </Routes>
-  </ErrorBoundary>
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </div>
     </Router>
   );

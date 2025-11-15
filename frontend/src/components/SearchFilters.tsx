@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import { Search, Filter, X, MapPin, Users } from 'lucide-react';
 import { useMapStore } from '../stores/mapStore';
 import { Location, Event } from '../types';
@@ -15,7 +15,7 @@ interface SearchFiltersProps {
   onToggleRouting: () => void;
 }
 
-const SearchFilters: React.FC<SearchFiltersProps> = ({
+const SearchFilters = memo<SearchFiltersProps>(({
   locations,
   events,
   onLocationFilter,
@@ -84,8 +84,8 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
     };
   }, [searchQuery]);
 
-  // Filter locations and events based on search and filters
-  useEffect(() => {
+  // Memoize filtering logic to prevent unnecessary recalculations
+  const { filteredLocs, filteredEvts } = useMemo(() => {
     const baseLocations = fetchedLocations ?? safeLocations;
     const baseEvents = fetchedEvents ?? safeEvents;
     
@@ -94,8 +94,8 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
     console.log('🔍 SearchFilters: fetchedEvents (from server search):', fetchedEvents?.length || 0);
     console.log('🔍 SearchFilters: baseEvents (will use):', baseEvents.length);
     
-    let filteredLocations = [...baseLocations];
-    let filteredEvents = [...baseEvents];
+    let filteredLocations = baseLocations;
+    let filteredEvents = baseEvents;
 
     // Apply search query
     if (searchQuery.trim()) {
@@ -107,7 +107,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         (Array.isArray(location.tags) && location.tags.some(tag => tag.toLowerCase().includes(query)))
       );
 
-  filteredEvents = filteredEvents.filter((event) =>
+      filteredEvents = filteredEvents.filter((event) =>
         event.title.toLowerCase().includes(query) ||
         event.description?.toLowerCase().includes(query) ||
         (Array.isArray(event.tags) && event.tags.some(tag => tag.toLowerCase().includes(query)))
@@ -128,9 +128,17 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
       );
     }
 
-    onLocationFilter(filteredLocations);
-    onEventFilter(filteredEvents);
-  }, [searchQuery, activeFilters, safeLocations, safeEvents, fetchedLocations, fetchedEvents, onLocationFilter, onEventFilter]);
+    return {
+      filteredLocs: filteredLocations,
+      filteredEvts: filteredEvents
+    };
+  }, [searchQuery, activeFilters, safeLocations, safeEvents, fetchedLocations, fetchedEvents]);
+
+  // Update parent components when filtered results change
+  useEffect(() => {
+    onLocationFilter(filteredLocs);
+    onEventFilter(filteredEvts);
+  }, [filteredLocs, filteredEvts, onLocationFilter, onEventFilter]);
 
   const handleCategoryToggle = (category: string) => {
     const categories = activeFilters.category.includes(category)
@@ -285,6 +293,8 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
       )}
     </div>
   );
-};
+});
+
+SearchFilters.displayName = 'SearchFilters';
 
 export default SearchFilters;

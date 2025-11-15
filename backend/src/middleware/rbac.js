@@ -3,28 +3,28 @@
  * Middleware functions for checking permissions and ownership
  */
 
-import Event from '../models/Event.js';
+import { findEventById } from '../repositories/eventRepository.js';
 import { ROLES, hasPermission } from '../config/permissions.js';
 
 /**
  * Middleware to check if user owns the event
- * Must be used after authenticate() middleware
+ * Must be used after authenticateFirebase() middleware
  * Attaches event to req.event if user is owner or admin
  */
 export const isEventOwner = async (req, res, next) => {
   try {
     const eventId = req.params.id;
     
-    // Validate event ID format
-    if (!eventId || !eventId.match(/^[0-9a-fA-F]{24}$/)) {
+    // Firestore IDs don't have a specific format requirement, just check if present
+    if (!eventId) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid event ID format'
+        message: 'Event ID is required'
       });
     }
     
     // Find the event
-    const event = await Event.findById(eventId);
+    const event = await findEventById(eventId);
     
     if (!event) {
       return res.status(404).json({
@@ -48,8 +48,9 @@ export const isEventOwner = async (req, res, next) => {
       return next();
     }
     
-    // Check if user is the creator
-    if (event.createdBy.toString() !== req.user._id.toString()) {
+    // Check if user is the creator (handle both uid and _id for compatibility)
+    const userId = req.user.uid || req.user._id;
+    if (event.createdBy !== userId) {
       return res.status(403).json({
         success: false,
         message: 'Access denied. You can only modify events you created.'
@@ -78,7 +79,7 @@ export const canViewRegistrations = async (req, res, next) => {
     const eventId = req.params.id;
     
     // Find the event
-    const event = await Event.findById(eventId);
+    const event = await findEventById(eventId);
     
     if (!event) {
       return res.status(404).json({
@@ -102,8 +103,8 @@ export const canViewRegistrations = async (req, res, next) => {
     }
     
     // Organizers can only view registrations for their own events
-    if (req.user.role === ROLES.ORGANIZER && 
-        event.createdBy.toString() === req.user._id.toString()) {
+    const userId = req.user.uid || req.user._id;
+    if (req.user.role === ROLES.ORGANIZER && event.createdBy === userId) {
       req.event = event;
       return next();
     }
@@ -202,6 +203,7 @@ export const canModifyUser = (req, res, next) => {
   }
   
   const targetUserId = req.params.id || req.params.userId;
+  const currentUserId = req.user.uid || req.user._id;
   
   // Admins can modify anyone
   if (req.user.role === ROLES.ADMIN) {
@@ -209,7 +211,7 @@ export const canModifyUser = (req, res, next) => {
   }
   
   // Users can only modify their own profile
-  if (targetUserId === req.user._id.toString()) {
+  if (targetUserId === currentUserId || targetUserId === currentUserId.toString()) {
     return next();
   }
   

@@ -13,7 +13,7 @@ import {
   getUpcomingEvents,
   getMyEvents
 } from '../controllers/eventController.js';
-import { authenticate, optionalAuth } from '../middleware/auth.js';
+import { authenticateFirebase, optionalFirebaseAuth } from '../middleware/firebaseAuth.js';
 import { 
   validateEvent, 
   validateEventQuery, 
@@ -22,11 +22,11 @@ import {
 import { isEventOwner, requireOrganizerOrAdmin } from '../middleware/rbac.js';
 
 // Public routes (with optional auth for personalization)
-router.get('/', optionalAuth, validateEventQuery, getEvents);
+router.get('/', optionalFirebaseAuth, validateEventQuery, getEvents);
 router.get('/upcoming', getUpcomingEvents);
 
 // Authenticated routes (all roles) - MUST come BEFORE /:id dynamic route
-router.use(authenticate);
+router.use(authenticateFirebase);
 router.get('/recommended', getRecommendedEvents);
 router.get('/my-events', getMyEvents); // Get events created by current user
 

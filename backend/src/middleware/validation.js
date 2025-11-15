@@ -101,7 +101,7 @@ const validateLocation = [
   body('buildingId')
     .optional()
     .isMongoId()
-    .withMessage('Building ID must be a valid MongoDB ObjectId'),
+    .withMessage('Building ID must be a valid ID'),
   
   body('floor')
     .optional(),
@@ -140,7 +140,7 @@ const validateEvent = [
   
   body('locationId')
     .isMongoId()
-    .withMessage('Location ID must be a valid MongoDB ObjectId'),
+    .withMessage('Location ID must be a valid ID'),
   
   body('dateTime')
     .isISO8601()
@@ -266,18 +266,18 @@ const validateEventQuery = [
   query('locationId')
     .optional()
     .isMongoId()
-    .withMessage('Location ID must be a valid MongoDB ObjectId'),
+    .withMessage('Location ID must be a valid ID'),
   
   handleValidationErrors
 ];
 
 /**
- * MongoDB ObjectId parameter validation
+ * Generic ID parameter validation (Firestore document IDs)
  */
 const validateObjectId = [
   param('id')
     .isMongoId()
-    .withMessage('ID must be a valid MongoDB ObjectId'),
+    .withMessage('ID must be a valid document ID'),
   
   handleValidationErrors
 ];

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { LocationService } from '../services/locationService';
@@ -23,25 +23,9 @@ const MapPage: React.FC = () => {
 
   useEffect(() => {
     loadInitialData();
-  }, [user?.role]); // Reload when user role changes
+  }, []); // Only load once on mount
 
-  // Reload data when component mounts or becomes visible again
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('🔄 MapPage: Page visible again, reloading data...');
-        loadInitialData();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [user?.role]);
-
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -97,19 +81,23 @@ const MapPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.role]); // Only recreate if user role changes
 
-  const handleLocationSelect = (location: Location) => {
+  const handleLocationSelect = useCallback((location: Location) => {
     setSelectedLocation(location);
     // Clear event selection when location is selected
     setSelectedEvent(null);
-  };
+  }, []);
 
-  const handleEventSelect = (event: Event) => {
+  const handleEventSelect = useCallback((event: Event) => {
     setSelectedEvent(event);
     // Clear location selection when event is selected
     setSelectedLocation(null);
-  };
+  }, []);
+
+  const handleToggleRouting = useCallback(() => {
+    setRoutingMode(prev => !prev);
+  }, []);
 
   if (isLoading) {
     return (
@@ -194,7 +182,7 @@ const MapPage: React.FC = () => {
               onEventFilter={setFilteredEvents}
               className="sticky top-6"
               routingMode={routingMode}
-              onToggleRouting={() => setRoutingMode(!routingMode)}
+              onToggleRouting={handleToggleRouting}
             />
 
             {/* Selected Item Details */}

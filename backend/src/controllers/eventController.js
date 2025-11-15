@@ -1,5 +1,15 @@
-import Event from '../models/Event.js';
-import Location from '../models/Location.js';
+import {
+  createEvent as createEventRepo,
+  findEventById,
+  updateEvent as updateEventRepo,
+  deleteEvent as deleteEventRepo,
+  registerUserForEvent,
+  unregisterUserFromEvent,
+  listEvents,
+  getRecommendedEvents as getRecommendedEventsRepo,
+  findEventsByDateRange
+} from '../repositories/eventRepository.js';
+import { findLocationById } from '../repositories/locationRepository.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 /**
@@ -9,67 +19,60 @@ import { asyncHandler } from '../middleware/errorHandler.js';
  */
 const getEvents = asyncHandler(async (req, res) => {
   const { 
-    q, 
     category, 
     startDate, 
     endDate, 
     locationId, 
-    limit = 20, 
-    page = 1,
+    limit = 20,
     upcoming = false 
   } = req.query;
   
-  let query = {};
+  let events;
   
-  // Text search
-  if (q) {
-    query.$text = { $search: q };
-  }
-  
-  // Filter by category
-  if (category) {
-    query.category = category;
-  }
-  
-  // Filter by location
-  if (locationId) {
-    query.locationId = locationId;
-  }
-  
-  // Date range filter
+  // Date range or upcoming filter
   if (startDate || endDate || upcoming) {
-    query.dateTime = {};
+    const start = upcoming ? new Date() : (startDate ? new Date(startDate) : null);
+    const end = endDate ? new Date(endDate) : null;
     
-    if (upcoming) {
-      query.dateTime.$gte = new Date();
+    if (start || end) {
+      events = await findEventsByDateRange(
+        start || new Date(0),
+        end || new Date('2099-12-31'),
+        true // populate location
+      );
+      
+      // Apply additional filters
+      if (category) {
+        events = events.filter(e => e.category === category.toLowerCase());
+      }
+      if (locationId) {
+        events = events.filter(e => e.locationId === locationId);
+      }
     } else {
-      if (startDate) {
-        query.dateTime.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        query.dateTime.$lte = new Date(endDate);
-      }
+      events = await listEvents({
+        category: category ? category.toLowerCase() : undefined,
+        locationId,
+        upcomingOnly: upcoming === 'true',
+        limit: parseInt(limit),
+        populateLocation: true
+      });
     }
+  } else {
+    // List with filters
+    events = await listEvents({
+      category: category ? category.toLowerCase() : undefined,
+      locationId,
+      limit: parseInt(limit),
+      populateLocation: true
+    });
   }
-  
-  const skip = (parseInt(page) - 1) * parseInt(limit);
-  
-  const events = await Event.find(query)
-    .populate('locationId', 'name coordinates type')
-    .sort(q ? { score: { $meta: 'textScore' }, dateTime: 1 } : { dateTime: 1 })
-    .limit(parseInt(limit))
-    .skip(skip);
-  
-  const total = await Event.countDocuments(query);
   
   res.json({
     success: true,
     data: {
       events,
       pagination: {
-        current: parseInt(page),
-        pages: Math.ceil(total / parseInt(limit)),
-        total
+        total: events.length
       }
     }
   });
@@ -81,9 +84,7 @@ const getEvents = asyncHandler(async (req, res) => {
  * @access  Public
  */
 const getEvent = asyncHandler(async (req, res) => {
-  const event = await Event.findById(req.params.id)
-    .populate('locationId', 'name coordinates type description')
-    .populate('attendees.userId', 'name email');
+  const event = await findEventById(req.params.id, true); // populate location
   
   if (!event) {
     return res.status(404).json({
@@ -105,7 +106,7 @@ const getEvent = asyncHandler(async (req, res) => {
  */
 const createEvent = asyncHandler(async (req, res) => {
   // Verify location exists
-  const location = await Location.findById(req.body.locationId);
+  const location = await findLocationById(req.body.locationId);
   if (!location) {
     return res.status(400).json({
       success: false,
@@ -116,14 +117,11 @@ const createEvent = asyncHandler(async (req, res) => {
   // Create event with createdBy field
   const eventData = {
     ...req.body,
-    createdBy: req.user._id,
-    organizer: req.body.organizer || req.user.name // Use provided organizer name or user's name
+    createdBy: req.user.uid || req.user._id, // Firebase UID
+    organizer: req.body.organizer || req.user.name
   };
   
-  const event = await Event.create(eventData);
-  
-  await event.populate('locationId', 'name coordinates type');
-  await event.populate('createdBy', 'name email role');
+  const event = await createEventRepo(eventData);
   
   res.status(201).json({
     success: true,
@@ -140,7 +138,7 @@ const createEvent = asyncHandler(async (req, res) => {
 const updateEvent = asyncHandler(async (req, res) => {
   // If updating location, verify it exists
   if (req.body.locationId) {
-    const location = await Location.findById(req.body.locationId);
+    const location = await findLocationById(req.body.locationId);
     if (!location) {
       return res.status(400).json({
         success: false,
@@ -149,32 +147,23 @@ const updateEvent = asyncHandler(async (req, res) => {
     }
   }
   
-  // Don't allow updating createdBy field
-  delete req.body.createdBy;
-  
-  // Event already fetched and ownership verified by isEventOwner middleware
-  const event = await Event.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    {
-      new: true,
-      runValidators: true
-    }
-  ).populate('locationId', 'name coordinates type')
-   .populate('createdBy', 'name email role');
-  
-  if (!event) {
-    return res.status(404).json({
-      success: false,
-      message: 'Event not found'
+  try {
+    const event = await updateEventRepo(req.params.id, req.body);
+    
+    res.json({
+      success: true,
+      message: 'Event updated successfully',
+      data: { event }
     });
+  } catch (error) {
+    if (error.message === 'Event not found') {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+    throw error;
   }
-  
-  res.json({
-    success: true,
-    message: 'Event updated successfully',
-    data: { event }
-  });
 });
 
 /**
@@ -183,26 +172,23 @@ const updateEvent = asyncHandler(async (req, res) => {
  * @access  Private (Event Owner or Admin)
  */
 const cancelEvent = asyncHandler(async (req, res) => {
-  const event = await Event.findById(req.params.id)
-    .populate('locationId', 'name coordinates type')
-    .populate('createdBy', 'name email role');
-  
-  if (!event) {
-    return res.status(404).json({
-      success: false,
-      message: 'Event not found'
+  try {
+    const event = await updateEventRepo(req.params.id, { status: 'cancelled' });
+    
+    res.json({
+      success: true,
+      message: 'Event cancelled successfully',
+      data: { event }
     });
+  } catch (error) {
+    if (error.message === 'Event not found') {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+    throw error;
   }
-  
-  // Update status to cancelled without running full validators
-  event.status = 'cancelled';
-  await event.save({ validateModifiedOnly: true });
-  
-  res.json({
-    success: true,
-    message: 'Event cancelled successfully',
-    data: { event }
-  });
 });
 
 /**
@@ -211,22 +197,22 @@ const cancelEvent = asyncHandler(async (req, res) => {
  * @access  Private (Event Owner or Admin)
  */
 const deleteEvent = asyncHandler(async (req, res) => {
-  // Event ownership already verified by isEventOwner middleware
-  const event = await Event.findById(req.params.id);
-  
-  if (!event) {
-    return res.status(404).json({
-      success: false,
-      message: 'Event not found'
+  try {
+    await deleteEventRepo(req.params.id);
+    
+    res.json({
+      success: true,
+      message: 'Event deleted successfully'
     });
+  } catch (error) {
+    if (error.message === 'Event not found') {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
+    throw error;
   }
-  
-  await event.deleteOne();
-  
-  res.json({
-    success: true,
-    message: 'Event deleted successfully'
-  });
 });
 
 /**
@@ -239,7 +225,7 @@ const getRecommendedEvents = asyncHandler(async (req, res) => {
   
   const userInterests = req.user?.interests || [];
   
-  const events = await Event.getRecommendations(userInterests, parseInt(limit));
+  const events = await getRecommendedEventsRepo(userInterests, parseInt(limit));
   
   res.json({
     success: true,
@@ -256,27 +242,28 @@ const getRecommendedEvents = asyncHandler(async (req, res) => {
  * @access  Private
  */
 const registerForEvent = asyncHandler(async (req, res) => {
-  const event = await Event.findById(req.params.id);
-  
-  if (!event) {
-    return res.status(404).json({
-      success: false,
-      message: 'Event not found'
-    });
-  }
-  
   try {
-    await event.registerUser(req.user._id);
+    const userId = req.user.uid || req.user._id; // Firebase UID
+    const event = await registerUserForEvent(req.params.id, userId);
+    
+    // Calculate available spots
+    const availableSpots = event.capacity - (event.attendees?.length || 0);
     
     res.json({
       success: true,
       message: 'Successfully registered for event',
       data: { 
         event,
-        availableSpots: event.availableSpots
+        availableSpots
       }
     });
   } catch (error) {
+    if (error.message === 'Event not found') {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
+    }
     res.status(400).json({
       success: false,
       message: error.message
@@ -290,25 +277,30 @@ const registerForEvent = asyncHandler(async (req, res) => {
  * @access  Private
  */
 const unregisterFromEvent = asyncHandler(async (req, res) => {
-  const event = await Event.findById(req.params.id);
-  
-  if (!event) {
-    return res.status(404).json({
-      success: false,
-      message: 'Event not found'
+  try {
+    const userId = req.user.uid || req.user._id; // Firebase UID
+    const event = await unregisterUserFromEvent(req.params.id, userId);
+    
+    // Calculate available spots
+    const availableSpots = event.capacity - (event.attendees?.length || 0);
+    
+    res.json({
+      success: true,
+      message: 'Successfully unregistered from event',
+      data: { 
+        event,
+        availableSpots
+      }
     });
-  }
-  
-  await event.unregisterUser(req.user._id);
-  
-  res.json({
-    success: true,
-    message: 'Successfully unregistered from event',
-    data: { 
-      event,
-      availableSpots: event.availableSpots
+  } catch (error) {
+    if (error.message === 'Event not found') {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      });
     }
-  });
+    throw error;
+  }
 });
 
 /**
@@ -319,7 +311,11 @@ const unregisterFromEvent = asyncHandler(async (req, res) => {
 const getUpcomingEvents = asyncHandler(async (req, res) => {
   const { limit = 10 } = req.query;
   
-  const events = await Event.findUpcoming(parseInt(limit));
+  const events = await listEvents({
+    upcomingOnly: true,
+    limit: parseInt(limit),
+    populateLocation: true
+  });
   
   res.json({
     success: true,
@@ -333,12 +329,11 @@ const getUpcomingEvents = asyncHandler(async (req, res) => {
  * @access  Private (Authenticated users)
  */
 const getMyEvents = asyncHandler(async (req, res) => {
-  const events = await Event.findByCreator(req.user._id, {
-    sort: { dateTime: -1 }, // Most recent first
-    populate: [
-      { path: 'locationId', select: 'name address coordinates' },
-      { path: 'createdBy', select: 'name email role' }
-    ]
+  const userId = req.user.uid || req.user._id; // Firebase UID
+  
+  const events = await listEvents({
+    createdBy: userId,
+    populateLocation: true
   });
   
   res.json({

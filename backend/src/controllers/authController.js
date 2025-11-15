@@ -1,5 +1,10 @@
-import User from '../models/User.js';
-import { generateToken, generateCSRFToken } from '../utils/jwt.js';
+import { getFirebaseAuth } from '../utils/firebaseAdmin.js';
+import { 
+  createUser, 
+  findUserByEmail, 
+  findUserById 
+} from '../repositories/userRepository.js';
+import { generateCSRFToken } from '../utils/csrf.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 /**
@@ -12,7 +17,7 @@ import { asyncHandler } from '../middleware/errorHandler.js';
  * Registers a new user account in the system
  * @async
  * @function register
- * @description Creates a new user with hashed password and generates authentication tokens
+ * @description Creates a new user in Firebase Auth and Firestore with student role
  * @route POST /api/auth/register
  * @access Public
  * @param {Object} req - Express request object
@@ -22,19 +27,19 @@ import { asyncHandler } from '../middleware/errorHandler.js';
  * @param {string} req.body.password - User's password (required, min 6 characters)
  * @param {string[]} [req.body.interests] - Array of user interests (optional)
  * @param {Object} res - Express response object
- * @returns {Promise<void>} JSON response with user data and auth tokens
+ * @returns {Promise<void>} JSON response with user data and ID token
  * @throws {400} When user already exists or validation fails
- * @throws {500} When database operation fails
+ * @throws {500} When Firebase operation fails
  * @example
  * // POST /api/auth/register
  * // Body: { "name": "John Doe", "email": "john@example.com", "password": "password123", "interests": ["sports"] }
- * // Response: { "success": true, "data": { "user": {...}, "csrfToken": "..." } }
+ * // Response: { "success": true, "data": { "user": {...}, "idToken": "...", "csrfToken": "..." } }
  */
 const register = asyncHandler(async (req, res) => {
   const { name, email, password, interests } = req.body;
 
-  // Check if user already exists
-  const existingUser = await User.findOne({ email });
+  // Check if user already exists in Firestore
+  const existingUser = await findUserByEmail(email);
   if (existingUser) {
     return res.status(400).json({
       success: false,
@@ -42,9 +47,10 @@ const register = asyncHandler(async (req, res) => {
     });
   }
 
-  // Create user - Always force 'student' role for security
+  // Create user in Firebase Auth + Firestore
+  // Always force 'student' role for security
   // Only admins can promote users to 'organizer' or 'admin' roles
-  const user = await User.create({
+  const user = await createUser({
     name,
     email,
     password,
@@ -52,70 +58,56 @@ const register = asyncHandler(async (req, res) => {
     role: 'student' // Force student role - prevent privilege escalation
   });
 
-  // Generate token
-  const token = generateToken({ id: user._id });
+  // Generate custom token for the user to sign in
+  const auth = getFirebaseAuth();
+  const customToken = await auth.createCustomToken(user.uid);
 
-  // Set cookie with security settings for cross-origin (Vercel <-> Railway)
-  res.cookie(process.env.COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: true, // Always true for production HTTPS
-    sameSite: 'none', // Required for cross-site cookies (Vercel -> Railway)
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  });
-
+  // Client will use this token to get an ID token
   res.status(201).json({
     success: true,
     message: 'User registered successfully',
     data: {
       user,
+      customToken, // Client exchanges this for ID token
       csrfToken: generateCSRFToken()
     }
   });
 });
 
 /**
- * @desc    Login user
+ * @desc    Login user with email/password
  * @route   POST /api/auth/login
  * @access  Public
+ * @note    DEPRECATED - Frontend should use Firebase client SDK directly (signInWithEmailAndPassword)
+ *          This endpoint kept for backward compatibility but does minimal work
+ *          Password validation happens client-side via Firebase Auth
  */
 const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { email } = req.body;
 
-  // Check if user exists and get password
-  const user = await User.findOne({ email }).select('+password');
+  // Validate input
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email is required'
+    });
+  }
+
+  // Verify user exists in Firestore (for profile data)
+  const user = await findUserByEmail(email);
   if (!user) {
     return res.status(401).json({
       success: false,
-      message: 'Invalid credentials'
+      message: 'No account found with this email address'
     });
   }
 
-  // Check password
-  const isPasswordMatch = await user.comparePassword(password);
-  if (!isPasswordMatch) {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid credentials'
-    });
-  }
-
-  // Generate token
-  const token = generateToken({ id: user._id });
-
-  // Set cookie with security settings for cross-origin (Vercel <-> Railway)
-  res.cookie(process.env.COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: true, // Always true for production HTTPS
-    sameSite: 'none', // Required for cross-site cookies (Vercel -> Railway)
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-  });
-
-  // Remove password from response
-  user.password = undefined;
-
+  // Return user profile - client already authenticated via Firebase
+  // No password validation on backend (Firebase Admin SDK limitation)
+  // No customToken needed - client already has ID token from Firebase Auth
   res.json({
     success: true,
-    message: 'Login successful',
+    message: 'User profile retrieved',
     data: {
       user,
       csrfToken: generateCSRFToken()
@@ -124,17 +116,22 @@ const login = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Logout user
+ * @desc    Logout user (revoke refresh tokens)
  * @route   POST /api/auth/logout
  * @access  Private
  */
 const logout = asyncHandler(async (req, res) => {
-  // Clear cookie with matching security settings
-  res.clearCookie(process.env.COOKIE_NAME, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax' // Must match cookie creation settings
-  });
+  // Revoke all refresh tokens for the user
+  const auth = getFirebaseAuth();
+  
+  if (req.user && req.user.uid) {
+    try {
+      await auth.revokeRefreshTokens(req.user.uid);
+    } catch (error) {
+      // Log error but don't fail the logout
+      console.error('Failed to revoke refresh tokens:', error);
+    }
+  }
 
   res.json({
     success: true,
@@ -148,6 +145,7 @@ const logout = asyncHandler(async (req, res) => {
  * @access  Private
  */
 const getMe = asyncHandler(async (req, res) => {
+  // req.user is populated by firebaseAuth middleware
   res.json({
     success: true,
     data: {
@@ -171,10 +169,59 @@ const getCSRFToken = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Google OAuth callback - verify Google ID token and create/login user
+ * @route   POST /api/auth/google
+ * @access  Public
+ * @param   {string} req.body.idToken - Google ID token from client
+ */
+const googleAuth = asyncHandler(async (req, res) => {
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return res.status(400).json({
+      success: false,
+      message: 'Google ID token is required'
+    });
+  }
+
+  const auth = getFirebaseAuth();
+
+  // Verify the Google ID token with Firebase
+  const decodedToken = await auth.verifyIdToken(idToken);
+  
+  const { uid, email, name, picture } = decodedToken;
+
+  // Check if user exists in Firestore
+  let user = await findUserById(uid);
+
+  if (!user) {
+    // Create new user in Firestore (Firebase Auth user already exists)
+    user = await createUser({
+      uid, // Use the Firebase Auth UID
+      name: name || email.split('@')[0],
+      email,
+      role: 'student', // Default role for Google sign-ups
+      interests: [],
+      photoURL: picture || null
+    });
+  }
+
+  res.json({
+    success: true,
+    message: 'Google authentication successful',
+    data: {
+      user,
+      csrfToken: generateCSRFToken()
+    }
+  });
+});
+
 export {
   register,
   login,
   logout,
   getMe,
-  getCSRFToken
+  getCSRFToken,
+  googleAuth
 };

@@ -1,20 +1,6 @@
 version: '3.8'
 
 services:
-  mongodb:
-    image: mongo:6.0
-    container_name: smart-navigator-mongo
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-secure_password_change_me}
-    volumes:
-      - mongodb_data:/data/db
-    networks:
-      - smart-navigator-network
-
   backend:
     build: 
       context: ./backend
@@ -25,12 +11,10 @@ services:
       - "5000:5000"
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      MONGODB_URI: mongodb://admin:${MONGO_PASSWORD:-secure_password_change_me}@mongodb:27017/smart-navigator?authSource=admin
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
-      COOKIE_NAME: smart_navigator_token
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
-    depends_on:
-      - mongodb
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -56,9 +40,6 @@ services:
       - /app/node_modules
     networks:
       - smart-navigator-network
-
-volumes:
-  mongodb_data:
 
 networks:
   smart-navigator-network:

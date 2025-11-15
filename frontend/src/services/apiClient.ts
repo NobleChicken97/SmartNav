@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { auth } from '../config/firebase';
 
 // Prefer same-origin Vite proxy to ensure cookies are sent; fall back to backend URL if provided
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
@@ -22,7 +23,18 @@ class ApiClient {
   private setupInterceptors(): void {
     // Request interceptor
     this.client.interceptors.request.use(
-      (config) => {
+      async (config) => {
+        // Add Firebase ID token to Authorization header
+        const user = auth.currentUser;
+        if (user) {
+          try {
+            const idToken = await user.getIdToken();
+            config.headers.Authorization = `Bearer ${idToken}`;
+          } catch (error) {
+            console.error('[API] Failed to get ID token:', error);
+          }
+        }
+
         // Add CSRF token if available
         const csrfToken = this.getCSRFToken();
         if (csrfToken) {

@@ -12,9 +12,10 @@ This is a **full-stack application** with separate frontend and backend. Vercel 
    - DigitalOcean App Platform
    - Your own VPS
 
-2. **MongoDB Database**:
-   - MongoDB Atlas (Free tier available)
-   - Get your connection string ready
+2. **Firebase Project**:
+   - Firebase Console (Free tier available)
+   - Service account credentials ready
+   - Web app credentials for frontend
 
 ---
 
@@ -29,10 +30,12 @@ This is a **full-stack application** with separate frontend and backend. Vercel 
 5. Select `backend` as the root directory
 6. Add environment variables:
    ```
-   MONGODB_URI=your-mongodb-atlas-connection-string
-   JWT_SECRET=your-super-secret-jwt-key
+   FIREBASE_PROJECT_ID=your-firebase-project-id
+   FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
+   FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYourKey\n-----END PRIVATE KEY-----"
    NODE_ENV=production
    PORT=5000
+   CORS_ORIGIN=https://your-frontend-domain.vercel.app
    ```
 7. Deploy and note your backend URL (e.g., `https://smartnav-backend.railway.app`)
 
@@ -60,6 +63,14 @@ Go to your Vercel project settings and add:
 VITE_API_BASE_URL=https://your-backend-url.railway.app
 VITE_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
 VITE_MAP_ID=your-google-maps-map-id
+
+# Firebase Frontend Config
+VITE_FIREBASE_API_KEY=your-firebase-web-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-firebase-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
 ```
 
 **Important**: Replace `https://your-backend-url.railway.app` with your actual backend URL from Step 1.
@@ -141,30 +152,24 @@ Once backend is deployed, seed the database with initial data:
 
 ```bash
 # SSH into your backend deployment or use Railway/Render CLI
-node scripts/seed.js
+node scripts/seedThaparLocations.js
 ```
 
-Or create an admin user manually via API:
-```bash
-curl -X POST https://your-backend-url.railway.app/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Admin User",
-    "email": "admin@example.com",
-    "password": "SecurePassword123",
-    "role": "admin"
-  }'
-```
+Or create an admin user manually via Firebase Console:
+1. Go to Firebase Console → Authentication
+2. Add user manually
+3. Copy the UID
+4. Add to Firestore `users` collection with role='admin'
 
 ---
 
 ## ✅ Verification Checklist
 
 - [ ] Backend deployed and accessible
-- [ ] MongoDB Atlas database connected
-- [ ] Backend environment variables set
+- [ ] Firebase project configured
+- [ ] Backend environment variables set (Firebase credentials)
 - [ ] Backend CORS includes Vercel URL
-- [ ] Frontend environment variables set in Vercel
+- [ ] Frontend environment variables set in Vercel (Firebase + API)
 - [ ] Frontend deployed successfully
 - [ ] Can access Vercel URL
 - [ ] Can login to the application
@@ -194,8 +199,9 @@ curl -X POST https://your-backend-url.railway.app/api/auth/register \
 
 **Solution**: 
 1. Check logs in Railway/Render dashboard
-2. Verify MongoDB connection string is correct
+2. Verify Firebase credentials are correct
 3. Ensure all environment variables are set
+4. Check Firebase project permissions
 
 ---
 
@@ -235,14 +241,16 @@ curl -X POST https://your-backend-url.railway.app/api/auth/register \
 ┌─────────────────────────────────────────┐
 │  Railway/Render (Backend)               │
 │  - Node.js + Express                    │
-│  - JWT Authentication                   │
+│  - Firebase ID Token Verification       │
 │  - API Routes                           │
 └────────────┬────────────────────────────┘
              │
-             │ Database Connection
+             │ Firebase Admin SDK
              ▼
 ┌─────────────────────────────────────────┐
-│  MongoDB Atlas                          │
+│  Firebase (Google Cloud)                │
+│  - Firestore Database                   │
+│  - Authentication                       │
 │  - User data                            │
 │  - Locations                            │
 │  - Events                               │
@@ -255,7 +263,7 @@ curl -X POST https://your-backend-url.railway.app/api/auth/register \
 
 - **Vercel**: Free tier (hobby)
 - **Railway/Render**: Free tier or ~$5/month
-- **MongoDB Atlas**: Free tier (512 MB)
+- **Firebase**: Free tier (Spark Plan - 1GB storage, 50K reads/day)
 - **Total**: $0 - $5/month for learning/small projects
 
 ---
@@ -263,10 +271,11 @@ curl -X POST https://your-backend-url.railway.app/api/auth/register \
 ## 🔐 Security Notes
 
 1. **Never commit `.env` files** to Git (already in `.gitignore`)
-2. **Use strong JWT secrets** (generate with: `openssl rand -base64 32`)
-3. **Enable MongoDB Atlas IP whitelisting** (0.0.0.0/0 for Railway/Render)
+2. **Secure Firebase private keys** - use environment variables only
+3. **Deploy Firestore security rules** to protect data
 4. **Use HTTPS only** in production
-5. **Rotate secrets regularly**
+5. **Enable Firebase App Check** for production apps
+6. **Rotate Firebase service account keys** regularly
 
 ---
 
@@ -275,7 +284,8 @@ curl -X POST https://your-backend-url.railway.app/api/auth/register \
 - [Vercel Documentation](https://vercel.com/docs)
 - [Railway Documentation](https://docs.railway.app)
 - [Render Documentation](https://render.com/docs)
-- [MongoDB Atlas Setup](https://www.mongodb.com/docs/atlas/getting-started/)
+- [Firebase Documentation](https://firebase.google.com/docs)
+- [Firestore Security Rules](https://firebase.google.com/docs/firestore/security/get-started)
 
 ---
 

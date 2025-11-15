@@ -11,7 +11,7 @@ import {
   getNearbyLocations,
   importLocations
 } from '../controllers/locationController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticateFirebase } from '../middleware/firebaseAuth.js';
 import { 
   validateLocation, 
   validateLocationQuery, 
@@ -41,14 +41,14 @@ router.get('/:id', validateObjectId, getLocation);
 
 // Admin only routes - Location management restricted to administrators
 router.post('/', 
-  authenticate,
+  authenticateFirebase,
   requireAdmin,
   validateLocation, 
   createLocation
 );
 
 router.put('/:id', 
-  authenticate,
+  authenticateFirebase,
   requireAdmin,
   validateObjectId, 
   validateLocation, 
@@ -56,14 +56,14 @@ router.put('/:id',
 );
 
 router.delete('/:id', 
-  authenticate,
+  authenticateFirebase,
   requireAdmin,
   validateObjectId, 
   deleteLocation
 );
 
 router.post('/import', 
-  authenticate,
+  authenticateFirebase,
   requireAdmin,
   upload.single('csv'), 
   importLocations
