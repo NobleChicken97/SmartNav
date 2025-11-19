@@ -1,6 +1,11 @@
 /**
- * Create Organizer Users
- * Run this script to create organizer role users in Firebase
+ * Create Organizer & Admin Users
+ * 
+ * SECURITY: This script is the ONLY authorized method to create organizer/admin accounts.
+ * Public registration endpoint (/api/auth/register) is locked to 'student' role only.
+ * 
+ * Run this script to create organizer/admin users in Firebase:
+ * Usage: node --env-file=.env scripts/createOrganizers.js
  */
 
 import dotenv from 'dotenv';
@@ -12,7 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../.env') });
 
-import { createFirebaseUser, setCustomUserClaims } from '../src/utils/firebaseAdmin.js';
+import { createFirebaseUser } from '../src/utils/firebaseAdmin.js';
 import { createUser } from '../src/repositories/userRepository.js';
 
 const organizers = [
@@ -44,19 +49,16 @@ async function createOrganizers() {
       console.log(`Creating ${org.role}: ${org.email}`);
       
       // 1. Create Firebase Auth user
-      const firebaseUser = await createFirebaseUser(
-        org.email,
-        org.password,
-        org.name
-      );
+      const firebaseUser = await createFirebaseUser({
+        email: org.email,
+        password: org.password,
+        displayName: org.name
+      });
       
       console.log(`  ✅ Firebase user created: ${firebaseUser.uid}`);
       
-      // 2. Set custom claims (role)
-      await setCustomUserClaims(firebaseUser.uid, { role: org.role });
-      console.log(`  ✅ Role set: ${org.role}`);
-      
-      // 3. Create Firestore user document
+      // 2. Create Firestore user document (this also sets custom claims now)
+      // SECURITY: Direct repository call bypasses API role validation
       await createUser({
         uid: firebaseUser.uid,
         email: org.email,
@@ -66,7 +68,7 @@ async function createOrganizers() {
         interests: []
       });
       
-      console.log(`  ✅ Firestore document created\n`);
+      console.log(`  ✅ Firestore document created with custom claims\n`);
       
     } catch (error) {
       if (error.code === 'auth/email-already-exists') {

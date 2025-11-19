@@ -287,7 +287,7 @@ export const LeafletMap = memo<LeafletMapProps>(({
           setRouteInfo({ distance, time, instructions });
           toast.success(`Route found: ${distance}, ${time}`, { duration: 3000 });
         }
-      }).on('routingerror', function(e: any) {
+      }).on('routingerror', function(e: { error: { message: string } }) {
         console.error('Routing error:', e);
         toast.error('Could not find route between selected points');
         setRouteInfo(null);
@@ -299,41 +299,10 @@ export const LeafletMap = memo<LeafletMapProps>(({
     }
   }, [waypoints, enableRouting]);
 
-  // Use the already filtered locations from props, with fallback sample data
+  // Use the already filtered locations from props (no fallback - empty means show nothing)
   const filteredLocations = useMemo(() => {
-    if (Array.isArray(locations) && locations.length > 0) return locations;
-    return [
-      {
-        _id: 'sample-1',
-        name: 'Main Academic Block',
-        description: 'Primary academic building with classrooms and faculty offices',
-        type: 'building' as const,
-        coordinates: { lat: 30.3548, lng: 76.3635 },
-        tags: ['academic', 'main'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        _id: 'sample-2', 
-        name: 'Central Library',
-        description: 'Main library with study areas and digital resources',
-        type: 'building' as const,
-        coordinates: { lat: 30.3558, lng: 76.3645 },
-        tags: ['library', 'study'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        _id: 'sample-3',
-        name: 'Student Cafeteria',
-        description: 'Main dining facility for students and staff',
-        type: 'poi' as const,
-        coordinates: { lat: 30.3538, lng: 76.3625 },
-        tags: ['food', 'dining'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ];
+    if (Array.isArray(locations)) return locations;
+    return [];
   }, [locations]);
 
   // Update markers when locations or events change
@@ -349,8 +318,21 @@ export const LeafletMap = memo<LeafletMapProps>(({
   // Add location markers
   filteredLocations.forEach(location => {
       if (location.coordinates) {
+        // Find events at this location
+        const locationEvents = showEvents && Array.isArray(events) ? events.filter(event => {
+          const eventLocId = typeof event.locationId === 'object' ? event.locationId._id : event.locationId;
+          return eventLocId === location._id;
+        }) : [];
+        
+        const hasEvents = locationEvents.length > 0;
+        
         // Create custom icon based on type
         const emoji = MARKER_ICONS[location.type as keyof typeof MARKER_ICONS] || '📍';
+        const borderColor = hasEvents ? '#10b981' : '#2563eb'; // Green if has events, blue otherwise
+        const boxShadow = hasEvents 
+          ? '0 0 0 3px rgba(16, 185, 129, 0.3), 0 2px 6px rgba(0,0,0,0.3)' 
+          : '0 2px 6px rgba(0,0,0,0.3)';
+        
         const customIcon = L.divIcon({
           html: `
             <div style="
@@ -361,9 +343,9 @@ export const LeafletMap = memo<LeafletMapProps>(({
               display: flex; 
               align-items: center; 
               justify-content: center; 
-              border: 3px solid #2563eb; 
+              border: 3px solid ${borderColor}; 
               font-size: 18px;
-              box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+              box-shadow: ${boxShadow};
               cursor: pointer;
             ">${emoji}</div>
           `,
@@ -376,6 +358,32 @@ export const LeafletMap = memo<LeafletMapProps>(({
           icon: customIcon
         });
 
+        // Build events HTML
+        let eventsHTML = '';
+        if (locationEvents.length > 0) {
+          eventsHTML = `
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+              <h4 style="font-size: 13px; font-weight: 600; color: #374151; margin: 0 0 8px 0;">📅 Upcoming Events (${locationEvents.length})</h4>
+              ${locationEvents.slice(0, 3).map(event => {
+                const eventStatus = EventService.getEventStatus(event);
+                const statusColor = eventStatus === 'ongoing' ? '#10b981' : '#3b82f6';
+                const statusLabel = eventStatus === 'ongoing' ? 'LIVE NOW' : 'UPCOMING';
+                return `
+                  <div style="margin-bottom: 8px; padding: 8px; background: #f9fafb; border-radius: 6px; border-left: 3px solid ${statusColor};">
+                    <div style="font-size: 12px; font-weight: 600; color: #111827; margin-bottom: 2px;">${event.title}</div>
+                    <div style="font-size: 11px; color: #6b7280;">
+                      <span style="color: ${statusColor}; font-weight: 600;">${statusLabel}</span> • 
+                      ${new Date(event.dateTime).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} 
+                      at ${new Date(event.dateTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+              ${locationEvents.length > 3 ? `<div style="font-size: 11px; color: #6b7280; margin-top: 4px;">+${locationEvents.length - 3} more event${locationEvents.length - 3 > 1 ? 's' : ''}</div>` : ''}
+            </div>
+          `;
+        }
+
         // Add popup with improved styling
         marker.bindPopup(`
           <div style="padding: 12px; min-width: 200px; font-family: Inter, sans-serif;">
@@ -386,10 +394,11 @@ export const LeafletMap = memo<LeafletMapProps>(({
               ${location.floor ? 
                 `<span style="font-size: 12px; color: #6b7280;">Floor: ${location.floor}</span>` : ''}
             </div>
+            ${eventsHTML}
           </div>
         `, {
           closeButton: true,
-          maxWidth: 250
+          maxWidth: 300
         });
 
         // Add click handler
@@ -410,9 +419,6 @@ export const LeafletMap = memo<LeafletMapProps>(({
         const status = EventService.getEventStatus(event);
         return status === 'upcoming' || status === 'ongoing';
       });
-      
-      console.log('🗺️ LeafletMap: Rendering', activeEvents.length, 'active event markers (out of', events.length, 'total)');
-      console.log('🗺️ LeafletMap: Event titles:', activeEvents.map(e => e.title));
       
       // Clear existing event markers
       eventMarkersRef.current.forEach(marker => {
@@ -570,88 +576,6 @@ export const LeafletMap = memo<LeafletMapProps>(({
 
   return (
     <div className={`relative ${className}`}>
-      {/* Map Controls (style switcher) with Accessibility */}
-      <div className="map-controls" role="toolbar" aria-label="Map style controls">
-        <button
-          className={`layer-toggle-btn ${mapStyle === 'default' ? 'ring-2 ring-green-500' : ''}`}
-          title="Default map view"
-          aria-label="Switch to default map view"
-          aria-pressed={mapStyle === 'default'}
-          onClick={() => changeMapStyle('default')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              changeMapStyle('default');
-            }
-          }}
-        >
-          M
-        </button>
-        <button
-          className={`layer-toggle-btn ${mapStyle === 'satellite' ? 'ring-2 ring-green-500' : ''}`}
-          title="Satellite map view"
-          aria-label="Switch to satellite map view"
-          aria-pressed={mapStyle === 'satellite'}
-          onClick={() => changeMapStyle('satellite')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              changeMapStyle('satellite');
-            }
-          }}
-        >
-          S
-        </button>
-        <button
-          className={`layer-toggle-btn ${mapStyle === 'dark' ? 'ring-2 ring-green-500' : ''}`}
-          title="Dark map view"
-          aria-label="Switch to dark map view"
-          aria-pressed={mapStyle === 'dark'}
-          onClick={() => changeMapStyle('dark')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              changeMapStyle('dark');
-            }
-          }}
-        >
-          D
-        </button>
-        <button
-          className={`layer-toggle-btn ${mapStyle === 'terrain' ? 'ring-2 ring-green-500' : ''}`}
-          title="Terrain map view"
-          aria-label="Switch to terrain map view"
-          aria-pressed={mapStyle === 'terrain'}
-          onClick={() => changeMapStyle('terrain')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              changeMapStyle('terrain');
-            }
-          }}
-        >
-          T
-        </button>
-        <button
-          className={`layer-toggle-btn ${showEvents ? 'ring-2 ring-emerald-500' : ''}`}
-          title="Toggle events display"
-          aria-label={`${showEvents ? 'Hide' : 'Show'} events on map`}
-          aria-pressed={showEvents}
-          onClick={() => handleEventToggle()}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              handleEventToggle();
-            }
-          }}
-        >
-          🎫
-        </button>
-        
-        {/* Navigation Controls - Only show if routing is enabled */}
-        {/* This is now handled by the sidebar */}
-      </div>
-
       {/* Subtle Navigation Bar */}
       {enableRouting && routingMode && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-black/60 text-white rounded-lg shadow-lg px-4 py-2 flex items-center gap-4 backdrop-blur-sm">

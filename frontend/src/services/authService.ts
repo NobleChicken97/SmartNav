@@ -48,9 +48,9 @@ export class AuthService {
       }
       
       return response.data.user;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle Firebase errors that might come from backend
-      const errorCode = error?.code;
+      const errorCode = (error as { code?: string })?.code;
       const errorMessage = error?.message || '';
       
       console.error('Registration error:', { errorCode, errorMessage, error });
@@ -88,25 +88,25 @@ export class AuthService {
       // 3. Update user state in Zustand store
       // No need to do anything else here
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle Firebase Auth errors with proper error codes
-      const errorCode = error?.code;
+      const errorCode = (error as { code?: string })?.code;
       const errorMessage = error?.message || '';
       
       console.error('Login error:', { errorCode, errorMessage, error });
       
       if (errorCode === 'auth/user-not-found' || errorMessage.includes('user-not-found')) {
-        throw new Error('No account found with this email address');
+        throw new Error('User not registered. Please sign up first.');
       } else if (errorCode === 'auth/wrong-password' || errorMessage.includes('wrong-password')) {
-        throw new Error('Incorrect password. Please try again.');
+        throw new Error('Wrong password. Please try again.');
       } else if (errorCode === 'auth/invalid-email' || errorMessage.includes('invalid-email')) {
-        throw new Error('Invalid email address');
+        throw new Error('Invalid email format');
       } else if (errorCode === 'auth/user-disabled' || errorMessage.includes('user-disabled')) {
         throw new Error('This account has been disabled');
       } else if (errorCode === 'auth/too-many-requests' || errorMessage.includes('too-many-requests')) {
         throw new Error('Too many failed login attempts. Please try again later.');
       } else if (errorCode === 'auth/invalid-credential' || errorMessage.includes('invalid-credential')) {
-        throw new Error('Invalid email or password');
+        throw new Error('Wrong email or password. Please check and try again.');
       }
       
       // Re-throw with original message if no specific error matched
@@ -153,10 +153,22 @@ export class AuthService {
   /**
    * Get current user from backend
    * Requires valid Firebase ID token in request
+   * NOTE: This is now a fallback - prefer using ID token claims for faster access
    */
   static async getCurrentUser(): Promise<User> {
     const response = await apiClient.get<{ success: boolean; data: { user: User } }>('/auth/me');
     return response.data.user;
+  }
+
+  /**
+   * Force refresh ID token to get latest custom claims
+   * Use after profile updates to ensure claims are current
+   */
+  static async refreshIdToken(): Promise<void> {
+    const user = auth.currentUser;
+    if (user) {
+      await user.getIdToken(true); // Force refresh
+    }
   }
 
   /**

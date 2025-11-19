@@ -1,0 +1,38 @@
+{
+  // Terminal Configuration
+  "terminal.integrated.profiles.windows": {
+    "SmartNav Backend": {
+      "path": "pwsh.exe",
+      "args": ["-NoExit", "-Command", "cd backend; Write-Host '🔧 SmartNav Backend Terminal Ready' -ForegroundColor Green"]
+    },
+    "SmartNav Frontend": {
+      "path": "pwsh.exe",
+      "args": ["-NoExit", "-Command", "cd frontend; Write-Host '🎨 SmartNav Frontend Terminal Ready' -ForegroundColor Cyan"]
+    }
+  },
+  
+  // Auto-open specific terminals on workspace load (optional)
+  "terminal.integrated.automationProfile.windows": {
+    "path": "pwsh.exe"
+  },
+  
+  // Terminal tab naming
+  "terminal.integrated.tabs.title": "${process}",
+  "terminal.integrated.tabs.description": "${task}${separator}${local}${separator}${cwdFolder}",
+  
+  // Prevent terminals from closing on task completion
+  "terminal.integrated.enablePersistentSessions": true,
+  
+  // Restore terminals on workspace reload
+  "terminal.integrated.persistentSessionReviveProcess": "onExit",
+  
+  // Keep terminal scroll history
+  "terminal.integrated.scrollback": 10000,
+  
+  // Other useful settings
+  "files.eol": "\n",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  }
+}

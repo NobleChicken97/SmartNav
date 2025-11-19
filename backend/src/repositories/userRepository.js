@@ -30,7 +30,7 @@ const USERS_COLLECTION = 'users';
  */
 export const createUser = async (userData) => {
   try {
-    const { uid, name, email, password, interests = [], role = 'user', photoURL = null } = userData;
+    const { uid, name, email, password, interests = [], role = 'student', photoURL = null } = userData;
 
     let firebaseUid = uid;
 
@@ -49,9 +49,6 @@ export const createUser = async (userData) => {
       firebaseUid = firebaseUser.uid;
     }
 
-    // Set custom claims for role
-    await setCustomUserClaims(firebaseUid, { role });
-
     // Create user document in Firestore
     const userDoc = {
       name,
@@ -62,6 +59,16 @@ export const createUser = async (userData) => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
+
+    // Set custom claims with user profile for fast client-side access
+    // This allows frontend to get user data from ID token without backend call
+    await setCustomUserClaims(firebaseUid, { 
+      role,
+      name,
+      email,
+      interests,
+      photoURL
+    });
 
     await db.collection(USERS_COLLECTION).doc(firebaseUid).set(userDoc);
 
@@ -196,10 +203,18 @@ export const updateUser = async (uid, updateData) => {
     // Update Firestore document
     await userRef.update(updates);
 
-    // If role is being updated, also update custom claims
-    if (updateData.role) {
-      await setCustomUserClaims(uid, { role: updateData.role });
-    }
+    // Update custom claims to sync with Firestore changes
+    // This keeps ID token claims fresh for fast client-side access
+    const currentData = doc.data();
+    const claimsToUpdate = {
+      role: updateData.role || currentData.role,
+      name: updateData.name || currentData.name,
+      email: currentData.email, // Email never changes via this method
+      interests: updateData.interests || currentData.interests,
+      photoURL: updateData.photoURL !== undefined ? updateData.photoURL : currentData.photoURL
+    };
+    
+    await setCustomUserClaims(uid, claimsToUpdate);
 
     const repoLogger = logger.child({ component: 'user_repository', operation: 'update' });
     repoLogger.info('User updated successfully', { uid });

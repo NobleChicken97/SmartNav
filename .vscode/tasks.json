@@ -1,0 +1,69 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "🚀 Start Backend",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev",
+        "echo": true,
+        "focus": false,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🎨 Start Frontend",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev",
+        "echo": true,
+        "focus": false,
+        "clear": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "🚀 Start Both (Backend + Frontend)",
+      "dependsOn": [
+        "🚀 Start Backend",
+        "🎨 Start Frontend"
+      ],
+      "dependsOrder": "parallel",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "dev"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "⚡ Install All Dependencies",
+      "type": "shell",
+      "command": "npm install && cd backend && npm install && cd ../frontend && npm install",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "echo": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}

@@ -70,7 +70,8 @@ export class EventService {
   }
 
   static async getEventById(id: string): Promise<Event> {
-    return apiClient.get<Event>(`/events/${id}`);
+    const response = await apiClient.get<{ success: boolean; data: { event: Event } }>(`/events/${id}`);
+    return response.data.event;
   }
 
   static async getUpcomingEvents(limit: number = 10): Promise<Event[]> {

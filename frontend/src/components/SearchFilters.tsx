@@ -89,11 +89,6 @@ const SearchFilters = memo<SearchFiltersProps>(({
     const baseLocations = fetchedLocations ?? safeLocations;
     const baseEvents = fetchedEvents ?? safeEvents;
     
-    console.log('🔍 SearchFilters: Starting filter process');
-    console.log('🔍 SearchFilters: safeEvents (from props):', safeEvents.length, safeEvents.map(e => e.title));
-    console.log('🔍 SearchFilters: fetchedEvents (from server search):', fetchedEvents?.length || 0);
-    console.log('🔍 SearchFilters: baseEvents (will use):', baseEvents.length);
-    
     let filteredLocations = baseLocations;
     let filteredEvents = baseEvents;
 

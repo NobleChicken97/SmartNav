@@ -37,8 +37,12 @@ const EditEventPage = () => {
       const eventData = await EventService.getEventById(id);
       
       // Check ownership: Only creator or admin can edit
-      const creatorId = typeof eventData.createdBy === 'string' ? eventData.createdBy : eventData.createdBy._id;
-      if (user?.role !== 'admin' && creatorId !== user?._id) {
+      const creatorId = typeof eventData.createdBy === 'string' 
+        ? eventData.createdBy 
+        : eventData.createdBy?._id;
+      
+      // Compare with user's UID (Firebase UID is used as createdBy in events)
+      if (user?.role !== 'admin' && creatorId !== user?.uid) {
         setError('You do not have permission to edit this event');
         setLoading(false);
         return;
@@ -60,7 +64,9 @@ const EditEventPage = () => {
     try {
       await EventService.updateEvent(id, data);
       alert('Event updated successfully!');
-      navigate('/organizer/dashboard');
+      // Redirect based on user role
+      const dashboardRoute = user?.role === 'admin' ? '/admin/dashboard' : '/organizer/dashboard';
+      navigate(dashboardRoute);
     } catch (error) {
       console.error('Failed to update event:', error);
       const err = error as { response?: { data?: { message?: string } } };
@@ -71,7 +77,9 @@ const EditEventPage = () => {
   };
 
   const handleCancel = () => {
-    navigate('/organizer/dashboard');
+    // Redirect based on user role
+    const dashboardRoute = user?.role === 'admin' ? '/admin/dashboard' : '/organizer/dashboard';
+    navigate(dashboardRoute);
   };
 
   if (loading) {

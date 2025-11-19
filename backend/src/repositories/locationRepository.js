@@ -283,7 +283,8 @@ export const listLocations = async (options = {}) => {
 /**
  * Search locations by text (name, description, tags)
  * Note: Firestore doesn't have native full-text search.
- * This is a basic implementation. For production, consider using Algolia or similar.
+ * This client-side filtering is intentional and optimal for campus-scale datasets (< 500 locations).
+ * For multi-campus deployment (1000+ locations), consider Algolia or Elasticsearch.
  * @async
  * @param {string} searchText - Search query
  * @param {Object} options - Additional options

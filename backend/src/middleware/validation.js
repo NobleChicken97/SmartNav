@@ -52,21 +52,10 @@ const validateRegister = [
     .isLength({ min: 1, max: 50 })
     .withMessage('Each interest must be between 1 and 50 characters'),
   
-  handleValidationErrors
-];
-
-/**
- * User login validation
- */
-const validateLogin = [
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email'),
-  
-  body('password')
-    .notEmpty()
-    .withMessage('Password is required'),
+  // Security: Reject any 'role' field in registration - force student role server-side
+  body('role')
+    .not().exists()
+    .withMessage('Role cannot be specified during registration'),
   
   handleValidationErrors
 ];
@@ -276,7 +265,9 @@ const validateEventQuery = [
  */
 const validateObjectId = [
   param('id')
-    .isMongoId()
+    .isString()
+    .trim()
+    .notEmpty()
     .withMessage('ID must be a valid document ID'),
   
   handleValidationErrors
@@ -284,7 +275,6 @@ const validateObjectId = [
 
 export {
   validateRegister,
-  validateLogin,
   validateLocation,
   validateEvent,
   validateProfileUpdate,

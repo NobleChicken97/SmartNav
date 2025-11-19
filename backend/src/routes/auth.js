@@ -13,14 +13,13 @@ import express from 'express';
 const router = express.Router();
 import {
   register,
-  login,
   logout,
   getMe,
   getCSRFToken,
   googleAuth
 } from '../controllers/authController.js';
 import { authenticateFirebase } from '../middleware/firebaseAuth.js';
-import { validateRegister, validateLogin } from '../middleware/validation.js';
+import { validateRegister } from '../middleware/validation.js';
 
 /**
  * @swagger
@@ -174,43 +173,6 @@ import { validateRegister, validateLogin } from '../middleware/validation.js';
  */
 // Public routes
 router.post('/register', validateRegister, register);
-
-/**
- * @swagger
- * /api/auth/login:
- *   post:
- *     summary: Authenticate user and receive JWT token
- *     tags: [Authentication]
- *     security: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/LoginRequest'
- *           example:
- *             email: "john.doe@thapar.edu"
- *             password: "SecurePass123!"
- *     responses:
- *       200:
- *         description: Login successful
- *         headers:
- *           Set-Cookie:
- *             description: HttpOnly JWT token cookie
- *             schema:
- *               type: string
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/AuthResponse'
- *       400:
- *         description: Invalid credentials
- *       429:
- *         description: Rate limit exceeded
- *       500:
- *         description: Internal server error
- */
-router.post('/login', validateLogin, login);
 
 // Private routes - require authentication
 router.use(authenticateFirebase);

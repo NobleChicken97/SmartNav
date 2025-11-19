@@ -38,6 +38,13 @@ import { asyncHandler } from '../middleware/errorHandler.js';
 const register = asyncHandler(async (req, res) => {
   const { name, email, password, interests } = req.body;
 
+  // SECURITY: Strip any role field from request - prevent privilege escalation
+  // Only backend scripts can create organizer/admin accounts
+  if (req.body.role && req.body.role !== 'student') {
+    console.warn(`⚠️ Registration attempt with role: ${req.body.role} for email: ${email}`);
+  }
+  delete req.body.role; // Remove any role field
+
   // Check if user already exists in Firestore
   const existingUser = await findUserByEmail(email);
   if (existingUser) {
@@ -69,47 +76,6 @@ const register = asyncHandler(async (req, res) => {
     data: {
       user,
       customToken, // Client exchanges this for ID token
-      csrfToken: generateCSRFToken()
-    }
-  });
-});
-
-/**
- * @desc    Login user with email/password
- * @route   POST /api/auth/login
- * @access  Public
- * @note    DEPRECATED - Frontend should use Firebase client SDK directly (signInWithEmailAndPassword)
- *          This endpoint kept for backward compatibility but does minimal work
- *          Password validation happens client-side via Firebase Auth
- */
-const login = asyncHandler(async (req, res) => {
-  const { email } = req.body;
-
-  // Validate input
-  if (!email) {
-    return res.status(400).json({
-      success: false,
-      message: 'Email is required'
-    });
-  }
-
-  // Verify user exists in Firestore (for profile data)
-  const user = await findUserByEmail(email);
-  if (!user) {
-    return res.status(401).json({
-      success: false,
-      message: 'No account found with this email address'
-    });
-  }
-
-  // Return user profile - client already authenticated via Firebase
-  // No password validation on backend (Firebase Admin SDK limitation)
-  // No customToken needed - client already has ID token from Firebase Auth
-  res.json({
-    success: true,
-    message: 'User profile retrieved',
-    data: {
-      user,
       csrfToken: generateCSRFToken()
     }
   });
@@ -219,7 +185,6 @@ const googleAuth = asyncHandler(async (req, res) => {
 
 export {
   register,
-  login,
   logout,
   getMe,
   getCSRFToken,

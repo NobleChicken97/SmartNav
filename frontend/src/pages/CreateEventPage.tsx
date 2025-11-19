@@ -7,15 +7,19 @@ import { useNavigate } from 'react-router-dom';
 import { EventFormData } from '../types';
 import { EventService } from '../services/eventService';
 import EventForm from '../components/EventForm';
+import { useAuthStore } from '../stores/authStore';
 
 const CreateEventPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   const handleSubmit = async (data: EventFormData) => {
     try {
       await EventService.createEvent(data);
       alert('Event created successfully!');
-      navigate('/organizer/dashboard');
+      // Redirect based on user role
+      const dashboardRoute = user?.role === 'admin' ? '/admin/dashboard' : '/organizer/dashboard';
+      navigate(dashboardRoute);
     } catch (error) {
       console.error('Failed to create event:', error);
       const err = error as { response?: { data?: { message?: string } } };
@@ -26,7 +30,9 @@ const CreateEventPage = () => {
   };
 
   const handleCancel = () => {
-    navigate('/organizer/dashboard');
+    // Redirect based on user role
+    const dashboardRoute = user?.role === 'admin' ? '/admin/dashboard' : '/organizer/dashboard';
+    navigate(dashboardRoute);
   };
 
   return (

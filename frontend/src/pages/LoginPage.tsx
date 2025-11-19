@@ -23,8 +23,8 @@ const LoginPage: React.FC = () => {
   const from = state?.from?.pathname;
 
   useEffect(() => {
-    // Only redirect if authenticated AND no error
-    if (isAuthenticated && user && !error) {
+    // Only redirect if authenticated AND user data is loaded AND not loading
+    if (isAuthenticated && user && !isLoading && !error) {
       // Determine redirect path based on role
       let redirectPath = from;
       
@@ -41,14 +41,7 @@ const LoginPage: React.FC = () => {
       
       navigate(redirectPath, { replace: true });
     }
-  }, [isAuthenticated, user, error, navigate, from, isAdmin, isOrganizer]);
-
-  // Clear errors only when component unmounts, not on mount
-  useEffect(() => {
-    return () => {
-      clearError();
-    };
-  }, [clearError]);
+  }, [isAuthenticated, user, isLoading, error, navigate, from, isAdmin, isOrganizer]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

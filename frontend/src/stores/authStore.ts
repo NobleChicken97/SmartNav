@@ -65,9 +65,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       logger.log('🔐 Auth Store: Firebase sign-in successful');
       logger.log('🔐 Auth Store: onAuthStateChanged will handle user state update');
       
-      // Don't set state here - onAuthStateChanged listener will handle it
-      // Just clear loading state
-      set({ isLoading: false });
+      // Keep isLoading: true - onAuthStateChanged listener will set it to false
+      // This prevents premature redirect before user data is fetched
       
     } catch (error) {
       logger.error('🔐 Auth Store: Login failed:', error);
@@ -200,9 +199,26 @@ onAuthStateChanged(auth, async (firebaseUser) => {
   logger.log('🔥 Firebase Auth State Changed:', firebaseUser?.email || 'No user');
   
   if (firebaseUser) {
-    // User signed in - fetch user data from backend
+    // User signed in - get user data from ID token claims (faster than API call)
     try {
-      const user = await AuthService.getCurrentUser();
+      const idTokenResult = await firebaseUser.getIdTokenResult();
+      const claims = idTokenResult.claims;
+      
+      // Construct user object from token claims
+      const user: User = {
+        _id: firebaseUser.uid,
+        uid: firebaseUser.uid,
+        name: claims.name as string || firebaseUser.displayName || '',
+        email: claims.email as string || firebaseUser.email || '',
+        role: (claims.role as 'student' | 'organizer' | 'admin') || 'student',
+        interests: (claims.interests as string[]) || [],
+        photoURL: claims.photoURL as string || firebaseUser.photoURL || null,
+        createdAt: '', // Not in claims, will be populated if needed
+        updatedAt: ''
+      };
+      
+      logger.log('🔥 User data from token claims:', user.email, user.role);
+      
       useAuthStore.setState({ 
         user, 
         isAuthenticated: true,
@@ -211,23 +227,39 @@ onAuthStateChanged(auth, async (firebaseUser) => {
         _hasCheckedOnce: true
       });
     } catch (error) {
-      logger.error('🔥 Failed to fetch user data:', error);
-      // Firebase user exists but backend fetch failed - clear state
-      useAuthStore.setState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-        _hasCheckedOnce: true
-      });
+      logger.error('🔥 Failed to get user token:', error);
+      // Fallback: try fetching from backend
+      try {
+        const user = await AuthService.getCurrentUser();
+        useAuthStore.setState({ 
+          user, 
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+          _hasCheckedOnce: true
+        });
+      } catch (backendError) {
+        logger.error('🔥 Backend fallback failed:', backendError);
+        // Both methods failed - preserve login error if it exists
+        const currentError = useAuthStore.getState().error;
+        useAuthStore.setState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: currentError, // Preserve error from failed login attempt
+          _hasCheckedOnce: true
+        });
+      }
     }
   } else {
     // User signed out or not logged in
+    // Preserve existing error if one exists (e.g., from failed login)
+    const currentError = useAuthStore.getState().error;
     useAuthStore.setState({
       user: null,
       isAuthenticated: false,
       isLoading: false,
-      error: null,
+      error: currentError, // Preserve error instead of clearing it
       _hasCheckedOnce: true
     });
   }

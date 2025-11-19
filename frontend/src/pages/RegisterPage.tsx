@@ -43,13 +43,6 @@ const RegisterPage: React.FC = () => {
     }
   }, [isAuthenticated, error, navigate]);
 
-  // Clear errors only when component unmounts, not on mount
-  useEffect(() => {
-    return () => {
-      clearError();
-    };
-  }, [clearError]);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -78,8 +71,9 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
-    // Force student role for all registrations
-    await register({ ...formData, role: 'student' });
+    // Registration defaults to 'student' role on backend
+    // Organizer/Admin accounts created via backend scripts only
+    await register(formData);
     // Navigation will be handled by useEffect after successful registration
   };
 
