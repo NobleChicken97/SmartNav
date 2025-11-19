@@ -40,13 +40,13 @@ const initializeFirebaseAdmin = () => {
     console.log('[DEBUG] Private key ends with:', privateKey.substring(privateKey.length - 30));
 
     const serviceAccount = {
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      projectId: process.env.FIREBASE_PROJECT_ID.trim(),
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL.trim(),
       privateKey: privateKey
     };
 
-    console.log('[DEBUG] Project ID:', process.env.FIREBASE_PROJECT_ID);
-    console.log('[DEBUG] Client email:', process.env.FIREBASE_CLIENT_EMAIL);
+    console.log('[DEBUG] Project ID:', process.env.FIREBASE_PROJECT_ID.trim());
+    console.log('[DEBUG] Client email:', process.env.FIREBASE_CLIENT_EMAIL.trim());
 
     const app = initializeApp({
       credential: cert(serviceAccount),
