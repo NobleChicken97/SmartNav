@@ -31,13 +31,28 @@ const initializeFirebaseAdmin = () => {
 
     // Handle private key - Vercel stores multi-line values with \n as literal string
     // We need to replace the literal \n text with actual newline characters
-    const privateKey = process.env.FIREBASE_PRIVATE_KEY.split('\\n').join('\n');
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    
+    // Debug: Check first 50 chars to see format
+    console.log('[DEBUG] Private key starts with:', privateKey.substring(0, 50));
+    console.log('[DEBUG] Contains \\n literal?', privateKey.includes('\\n'));
+    console.log('[DEBUG] Contains actual newline?', privateKey.includes('\n'));
+    
+    // Replace literal \n with actual newlines if needed
+    if (!privateKey.includes('\n') && privateKey.includes('\\n')) {
+      privateKey = privateKey.split('\\n').join('\n');
+      console.log('[DEBUG] Replaced literal \\n with newlines');
+    }
 
     const serviceAccount = {
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: privateKey
+      privateKey: privateKey.trim()
     };
+
+    console.log('[DEBUG] Private key length:', privateKey.length);
+    console.log('[DEBUG] Project ID:', process.env.FIREBASE_PROJECT_ID);
+    console.log('[DEBUG] Client email:', process.env.FIREBASE_CLIENT_EMAIL);
 
     const app = initializeApp({
       credential: cert(serviceAccount),
