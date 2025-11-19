@@ -5,10 +5,37 @@
   "outputDirectory": "frontend/dist",
   "installCommand": "npm install --prefix frontend",
   "framework": "vite",
+  "functions": {
+    "api/**/*.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
+    { "source": "/api/auth/:path*", "destination": "/api/auth" },
+    { "source": "/api/events/:path*", "destination": "/api/events" },
+    { "source": "/api/locations/:path*", "destination": "/api/locations" },
+    { "source": "/api/users/:path*", "destination": "/api/users" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    },
     {
       "source": "/assets/(.*)",
       "headers": [

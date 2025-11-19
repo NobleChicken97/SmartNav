@@ -87,11 +87,11 @@ The application will be available at:
 
 ### Backend
 
+- **Vercel Serverless Functions** for API endpoints
 - **Node.js** with ES Modules
-- **Express.js** web framework
 - **Firebase** (Firestore + Authentication)
 - **Firebase Admin SDK** for server-side operations
-- **Multer** for file uploads
+- **Serverless Architecture** for automatic scaling
 
 ### DevOps & Quality
 
@@ -102,52 +102,57 @@ The application will be available at:
 
 ## 📁 Project Structure
 
-## 📁 Project Structure
-
 ```
 SmartNavigator/
-├── 📁 backend/                 # Node.js + Express API
-│   ├── src/
-│   │   ├── controllers/        # Route handlers
+├── 📁 api/                     # Vercel Serverless Functions
+│   ├── _lib/                   # Shared library code
+│   │   ├── controllers/        # Business logic
 │   │   ├── repositories/       # Firestore data access
-│   │   ├── routes/            # API routes
-│   │   ├── middleware/        # Custom middleware
-│   │   └── utils/             # Helper functions
-│   └── tests/                 # Backend tests
-├── 📁 frontend/               # React + TypeScript app
+│   │   ├── middleware/         # Auth, RBAC, validation
+│   │   ├── utils/              # Firebase admin, helpers
+│   │   └── config/             # Permissions config
+│   ├── auth.js                 # Auth endpoints
+│   ├── events.js               # Events endpoints
+│   ├── locations.js            # Locations endpoints
+│   ├── users.js                # Users endpoints
+│   └── package.json            # API dependencies
+├── 📁 backend/                 # Legacy backend (deprecated)
+│   └── src/                    # Use api/ folder instead
+├── 📁 frontend/                # React + TypeScript app
 │   ├── src/
-│   │   ├── components/        # Reusable components
-│   │   ├── pages/             # Route components
-│   │   ├── services/          # API services
-│   │   ├── stores/            # Zustand stores
-│   │   ├── types/             # TypeScript definitions
-│   │   └── utils/             # Helper functions
-│   └── public/                # Static assets
-├── 📁 docs/                   # Project documentation
-├── 📁 scripts/                # Database seeding & utilities
-├── 📁 .github/                # CI/CD workflows
-├── docker-compose.yml         # Container orchestration
-└── README.md                  # You are here!
+│   │   ├── components/         # Reusable components
+│   │   ├── pages/              # Route components
+│   │   ├── services/           # API services
+│   │   ├── stores/             # Zustand stores
+│   │   ├── types/              # TypeScript definitions
+│   │   └── utils/              # Helper functions
+│   └── public/                 # Static assets
+├── 📁 scripts/                 # Database seeding utilities
+├── API_DEPLOYMENT.md           # Vercel deployment guide
+├── vercel.json                 # Vercel configuration
+└── README.md                   # You are here!
 ```
 
 ## 🎯 Current Status
 
 **Project Status:** Production Ready ✅  
-**Architecture:** Firebase (Firestore + Authentication)  
+**Architecture:** Vercel Serverless + Firebase  
 **Last Updated:** November 19, 2025
 
 ### ✅ Completed Features
 
-- ✅ **Firebase Migration Complete** - Full MongoDB to Firebase Firestore migration
-- ✅ **Firebase Authentication** - Secure client-side password handling with Google Sign-In
-- ✅ **Enhanced Error Handling** - User-friendly error messages for login/registration
-- ✅ Full ES Modules conversion (Backend + Frontend)
+- ✅ **Vercel Serverless Deployment** - Full backend converted to serverless functions
+- ✅ **Firebase Integration** - Firestore database + Authentication
+- ✅ **Google Sign-In** - OAuth authentication flow
+- ✅ **Modern Design System** - Custom branding with green/blue/cream colors
+- ✅ Full ES Modules support (Frontend + API)
 - ✅ Interactive Leaflet maps with campus locations
 - ✅ Location CRUD operations with Firestore
 - ✅ **Event end time tracking with time ranges**
 - ✅ **Real-time event status detection (Upcoming/Ongoing/Completed)**
 - ✅ **Smart dashboards with clickable statistics and filtering**
 - ✅ Role-based access control (Student, Organizer, Admin)
+- ✅ **Serverless API** - Auto-scaling, pay-per-use deployment
 - ✅ Responsive design for all devices
 - ✅ Docker containerization (simplified, no MongoDB)
 - ✅ Clean architecture (44% fewer dependencies)
@@ -230,6 +235,44 @@ docker-compose up -d       # Start with Docker
 - ✅ **UI Consistency** - All pages updated with card components, improved typography
 - ✅ **Production Merge** - Firebase branch successfully merged to main
 
+## 🚀 Deployment
+
+### Vercel (Recommended - Free Tier)
+
+This project is optimized for **Vercel** deployment with serverless functions.
+
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy to production
+vercel --prod
+```
+
+**Complete deployment guide:** See [API_DEPLOYMENT.md](./API_DEPLOYMENT.md)
+
+**What you get:**
+
+- ✅ Frontend hosted on Vercel CDN
+- ✅ Serverless API at `/api/*` endpoints
+- ✅ Automatic HTTPS & scaling
+- ✅ 100GB bandwidth/month (free tier)
+
+### Environment Variables
+
+Set these in **Vercel Dashboard** → Settings → Environment Variables:
+
+```bash
+# Firebase Admin SDK
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_CLIENT_EMAIL=your-service-account-email
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+# CORS
+CORS_ORIGIN=https://yourdomain.vercel.app
+NODE_ENV=production
+```
+
 ## 🔥 Firebase Setup
 
 This project uses Firebase for authentication and database. See **[QUICK_START_FIREBASE.md](./QUICK_START_FIREBASE.md)** for detailed setup instructions.
@@ -239,9 +282,9 @@ This project uses Firebase for authentication and database. See **[QUICK_START_F
 1. Create Firebase project at https://console.firebase.google.com
 2. Enable Authentication (Email/Password + Google)
 3. Enable Firestore Database
-4. Get service account credentials for backend
+4. Get service account credentials for Vercel deployment
 5. Get web app credentials for frontend
-6. Configure `.env` files (see `.env.example`)
+6. Configure environment variables in Vercel Dashboard
 
 ## 🤝 Contributing
 

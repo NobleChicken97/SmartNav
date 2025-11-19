@@ -1,0 +1,36 @@
+# Exclude backend folder (using Vercel Serverless Functions instead)
+
+backend/
+
+# Exclude development files
+
+node_modules/
+\*.log
+.env.local
+.DS_Store
+
+# Exclude build artifacts
+
+\*.tsbuildinfo
+dist/
+
+# Exclude test files
+
+tests/
+**tests**/
+_.test.js
+_.spec.js
+
+# Exclude documentation
+
+docs/
+\*.md
+!README.md
+
+# Exclude scripts
+
+scripts/
+
+# Exclude logos
+
+logos/
