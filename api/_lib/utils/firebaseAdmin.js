@@ -29,11 +29,9 @@ const initializeFirebaseAdmin = () => {
       );
     }
 
-    // Handle private key - convert \n to actual newlines if needed
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
-    if (privateKey.includes('\\n')) {
-      privateKey = privateKey.replace(/\\n/g, '\n');
-    }
+    // Handle private key - Vercel stores multi-line values with \n as literal string
+    // We need to replace the literal \n text with actual newline characters
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY.split('\\n').join('\n');
 
     const serviceAccount = {
       projectId: process.env.FIREBASE_PROJECT_ID,
