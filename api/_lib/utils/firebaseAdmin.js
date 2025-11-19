@@ -29,11 +29,14 @@ const initializeFirebaseAdmin = () => {
       );
     }
 
-    // Handle private key - replace literal \n with actual newlines
+    // Handle private key - normalize all line endings
     let privateKey = process.env.FIREBASE_PRIVATE_KEY;
     
-    // Always replace literal \n with actual newlines (handles all cases)
-    privateKey = privateKey.replace(/\\n/g, '\n');
+    // Replace literal \n with actual newlines, then normalize all line endings to \n
+    privateKey = privateKey
+      .replace(/\\n/g, '\n')  // Replace literal \n with newline
+      .replace(/\r\n/g, '\n') // Replace Windows CRLF with LF
+      .replace(/\r/g, '\n');  // Replace Mac CR with LF
     
     console.log('[DEBUG] Private key length after processing:', privateKey.length);
     console.log('[DEBUG] Private key starts with:', privateKey.substring(0, 50));
