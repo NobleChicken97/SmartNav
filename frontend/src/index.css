@@ -436,6 +436,39 @@ h1.hero-title,
   background: var(--accent-red);
   animation: pulse 1s infinite;
 }
+
+/* Pulsing animation for locations with events */
+.location-marker.has-events {
+  animation: marker-pulse 2s ease-in-out infinite;
+}
+
+/* Pulsing animation for ongoing events */
+.event-marker.ongoing-event {
+  animation: event-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes marker-pulse {
+  0%,
+  100% {
+    transform: rotate(-45deg) scale(1);
+  }
+  50% {
+    transform: rotate(-45deg) scale(1.08);
+  }
+}
+
+@keyframes event-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 3px 8px rgba(16, 185, 129, 0.5);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.8);
+  }
+}
+
 @keyframes pulse {
   0% {
     box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);

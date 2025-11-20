@@ -55,7 +55,7 @@ export interface Location {
   _id: string;
   name: string;
   description?: string;
-  type: 'hostel' | 'class' | 'faculty' | 'entertainment' | 'shop';
+  type: 'hostel' | 'class' | 'faculty' | 'entertainment' | 'shop' | 'parking' | 'medical' | 'sports' | 'eatables' | 'religious';
   coordinates: Coordinates;
   buildingId?: string;
   floor?: number | string;
@@ -74,7 +74,7 @@ export interface Location {
 export interface LocationFormData {
   name: string;
   description?: string;
-  type: 'hostel' | 'class' | 'faculty' | 'entertainment' | 'shop';
+  type: 'hostel' | 'class' | 'faculty' | 'entertainment' | 'shop' | 'parking' | 'medical' | 'sports' | 'eatables' | 'religious';
   coordinates: Coordinates;
   buildingId?: string;
   floor?: number | string;

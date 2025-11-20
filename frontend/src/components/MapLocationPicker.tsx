@@ -10,7 +10,7 @@ import 'leaflet/dist/leaflet.css';
 interface MapLocationPickerProps {
   coordinates: { lat: number; lng: number };
   onCoordinatesChange: (lat: number, lng: number) => void;
-  locationType?: 'hostel' | 'class' | 'faculty' | 'entertainment' | 'shop';
+  locationType?: 'hostel' | 'class' | 'faculty' | 'entertainment' | 'shop' | 'parking' | 'medical' | 'sports' | 'eatables' | 'religious';
 }
 
 const MapLocationPicker = ({ coordinates, onCoordinatesChange, locationType = 'hostel' }: MapLocationPickerProps) => {
@@ -25,6 +25,11 @@ const MapLocationPicker = ({ coordinates, onCoordinatesChange, locationType = 'h
       faculty: { color: '#e9d5ff', emoji: '👨‍🏫' },    // Light purple
       entertainment: { color: '#fce7f3', emoji: '🎭' }, // Light pink
       shop: { color: '#fed7aa', emoji: '🛒' },        // Light orange
+      parking: { color: '#e5e7eb', emoji: '🅿️' },     // Light gray
+      medical: { color: '#fee2e2', emoji: '🏥' },     // Light red
+      sports: { color: '#d1fae5', emoji: '⚽' },      // Light green
+      eatables: { color: '#fef3c7', emoji: '🍽️' },   // Light amber
+      religious: { color: '#ede9fe', emoji: '🕌' },   // Light purple
     };
 
     const borderColors: Record<string, string> = {
@@ -33,6 +38,11 @@ const MapLocationPicker = ({ coordinates, onCoordinatesChange, locationType = 'h
       faculty: '#6b21a8',     // Dark purple
       entertainment: '#be185d', // Dark pink
       shop: '#c2410c',        // Dark orange
+      parking: '#4b5563',     // Dark gray
+      medical: '#b91c1c',     // Dark red
+      sports: '#15803d',      // Dark green
+      eatables: '#c2410c',    // Dark amber
+      religious: '#6b21a8',   // Dark purple
     };
 
     const style = iconStyles[type] || iconStyles.hostel;

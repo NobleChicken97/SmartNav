@@ -1019,7 +1019,12 @@ const AdminDashboard = () => {
                       'class': '🎓',
                       'faculty': '👨‍🏫',
                       'entertainment': '🎭',
-                      'shop': '🛒'
+                      'shop': '🛒',
+                      'parking': '🅿️',
+                      'medical': '🏥',
+                      'sports': '⚽',
+                      'eatables': '🍽️',
+                      'religious': '🕌'
                     };
                     const typeEmoji = typeEmojiMap[location.type] || '📍';
                     

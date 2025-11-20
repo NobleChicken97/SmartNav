@@ -323,52 +323,63 @@ export const LeafletMap = memo<LeafletMapProps>(({
         
         // Get type-specific emoji and color
         const emoji = MARKER_ICONS[location.type as keyof typeof MARKER_ICONS] || '📍';
+        // Vibrant colors for better visibility
         const typeColors: Record<string, string> = {
-          'hostel': '#fef3c7',      // Light yellow
-          'class': '#dbeafe',       // Light blue
-          'faculty': '#e9d5ff',     // Light purple
-          'entertainment': '#fce7f3', // Light pink
-          'shop': '#fed7aa'         // Light orange
+          'hostel': '#fbbf24',       // Vibrant yellow
+          'class': '#3b82f6',        // Vibrant blue
+          'faculty': '#a855f7',      // Vibrant purple
+          'entertainment': '#ec4899', // Vibrant pink
+          'shop': '#f97316',         // Vibrant orange
+          'parking': '#9ca3af',      // Gray
+          'medical': '#ef4444',      // Red
+          'sports': '#22c55e',       // Bright green
+          'eatables': '#f59e0b',     // Amber
+          'religious': '#8b5cf6'     // Purple
         };
         const borderColors: Record<string, string> = {
-          'hostel': '#15803d',      // Dark green
-          'class': '#1e40af',       // Dark blue
-          'faculty': '#6b21a8',     // Dark purple
+          'hostel': '#d97706',       // Dark yellow
+          'class': '#1e40af',        // Dark blue
+          'faculty': '#7c3aed',      // Dark purple
           'entertainment': '#be185d', // Dark pink
-          'shop': '#c2410c'         // Dark orange
+          'shop': '#c2410c',         // Dark orange
+          'parking': '#4b5563',      // Dark gray
+          'medical': '#b91c1c',      // Dark red
+          'sports': '#15803d',       // Dark green
+          'eatables': '#c2410c',     // Dark amber
+          'religious': '#6b21a8'     // Dark purple
         };
-        const baseColor = typeColors[location.type] || '#dbeafe';
+        const baseColor = typeColors[location.type] || '#3b82f6';
         const borderColor = borderColors[location.type] || '#1e40af';
         
-        // Add glow effect if location has events - bigger and more visible
+        // Add glow effect if location has events (upcoming or ongoing)
         const boxShadow = hasEvents 
-          ? `0 0 0 5px rgba(16, 185, 129, 0.7), 0 0 20px 3px rgba(16, 185, 129, 0.6), 0 3px 6px rgba(0, 0, 0, 0.3)` 
-          : '0 3px 6px rgba(0, 0, 0, 0.3)';
+          ? `0 0 0 6px rgba(16, 185, 129, 0.8), 0 0 25px 4px rgba(16, 185, 129, 0.7), 0 4px 8px rgba(0, 0, 0, 0.3)` 
+          : '0 4px 8px rgba(0, 0, 0, 0.4)';
         
-        // Create teardrop-shaped custom icon
+        // Create teardrop-shaped custom icon (smaller size)
         const customIcon = L.divIcon({
           html: `
-            <div style="
+            <div class="location-marker ${hasEvents ? 'has-events' : ''}" style="
               background: ${baseColor}; 
-              width: 32px; 
-              height: 32px; 
+              width: 24px; 
+              height: 24px; 
               border-radius: 50% 50% 50% 0;
               transform: rotate(-45deg);
               display: flex; 
               align-items: center; 
               justify-content: center; 
               box-shadow: ${boxShadow};
-              border: 3px solid ${hasEvents ? '#10b981' : borderColor};
+              border: 4px solid ${hasEvents ? '#10b981' : borderColor};
               cursor: pointer;
             ">
               <span style="
                 transform: rotate(45deg);
-                font-size: 16px;
+                font-size: 14px;
               ">${emoji}</span>
             </div>
           `,
-          iconSize: [35, 35],
-          iconAnchor: [17.5, 17.5],
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
           className: 'custom-leaflet-marker'
         });
 
@@ -614,6 +625,47 @@ export const LeafletMap = memo<LeafletMapProps>(({
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           )}
+        </div>
+      )}
+
+      {/* Turn-by-Turn Directions Panel */}
+      {routeInfo && routeInfo.instructions && routeInfo.instructions.length > 0 && (
+        <div className="absolute top-20 right-4 z-[1000] bg-white rounded-lg shadow-xl max-w-sm max-h-96 overflow-hidden">
+          <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between">
+            <h3 className="font-semibold text-sm">Turn-by-Turn Directions</h3>
+            <button
+              onClick={() => setRouteInfo(null)}
+              className="hover:bg-blue-700 rounded p-1"
+              title="Close directions"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="overflow-y-auto max-h-80">
+            {routeInfo.instructions.map((instruction, index) => {
+              // Parse instruction for turn type
+              const lowerInst = instruction.toLowerCase();
+              let icon = '⬆️'; // straight
+              if (lowerInst.includes('left')) icon = '⬅️';
+              else if (lowerInst.includes('right')) icon = '➡️';
+              else if (lowerInst.includes('arrive') || lowerInst.includes('destination')) icon = '🏁';
+              
+              return (
+                <div
+                  key={index}
+                  className="px-4 py-3 border-b border-gray-200 hover:bg-gray-50 flex items-start gap-3"
+                >
+                  <span className="text-xl flex-shrink-0 mt-0.5">{icon}</span>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-800">{instruction}</p>
+                  </div>
+                  <span className="text-xs text-gray-500 flex-shrink-0">{index + 1}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
