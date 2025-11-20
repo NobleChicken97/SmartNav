@@ -55,6 +55,7 @@ export const LeafletMap = memo<LeafletMapProps>(({
   // New routing state
   const [waypoints, setWaypoints] = useState<L.LatLng[]>([]);
   const [routeInfo, setRouteInfo] = useState<{distance: string; time: string; instructions: string[]} | null>(null);
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
   // Memoized callback for location selection
   const handleLocationSelect = useCallback((location: Location) => {
@@ -313,7 +314,7 @@ export const LeafletMap = memo<LeafletMapProps>(({
   // Add location markers
   filteredLocations.forEach(location => {
       if (location.coordinates) {
-        // Find events at this location
+        // Find events at this location and check if any are ongoing
         const locationEvents = showEvents && Array.isArray(events) ? events.filter(event => {
           const eventLocId = typeof event.locationId === 'object' ? event.locationId._id : event.locationId;
           return eventLocId === location._id;
@@ -321,9 +322,18 @@ export const LeafletMap = memo<LeafletMapProps>(({
         
         const hasEvents = locationEvents.length > 0;
         
+        // Check if any event is currently ongoing
+        const hasOngoingEvent = locationEvents.some(event => {
+          const status = EventService.getEventStatus(event);
+          return status === 'ongoing';
+        });
+        
         // Get type-specific emoji and color
         const emoji = MARKER_ICONS[location.type as keyof typeof MARKER_ICONS] || '📍';
-        // Vibrant colors for better visibility
+        // Vibrant colors for better visibility - LARGER sizes for event locations
+        const markerSize = hasEvents ? 32 : 24; // Bigger for events
+        const iconSize = hasEvents ? 18 : 14; // Bigger emoji for events
+        
         const typeColors: Record<string, string> = {
           'hostel': '#fbbf24',       // Vibrant yellow
           'class': '#3b82f6',        // Vibrant blue
@@ -351,35 +361,47 @@ export const LeafletMap = memo<LeafletMapProps>(({
         const baseColor = typeColors[location.type] || '#3b82f6';
         const borderColor = borderColors[location.type] || '#1e40af';
         
-        // Add glow effect if location has events (upcoming or ongoing)
-        const boxShadow = hasEvents 
-          ? `0 0 0 6px rgba(16, 185, 129, 0.8), 0 0 25px 4px rgba(16, 185, 129, 0.7), 0 4px 8px rgba(0, 0, 0, 0.3)` 
-          : '0 4px 8px rgba(0, 0, 0, 0.4)';
+        // Different glow effects: ONGOING = pulsing green, UPCOMING = steady blue
+        let boxShadow = '0 4px 8px rgba(0, 0, 0, 0.4)';
+        let eventBorderColor = borderColor;
+        let animationClass = '';
         
-        // Create teardrop-shaped custom icon (smaller size)
+        if (hasOngoingEvent) {
+          // ONGOING: Strong pulsing green glow
+          boxShadow = '0 0 0 8px rgba(16, 185, 129, 0.9), 0 0 30px 6px rgba(16, 185, 129, 0.8), 0 4px 12px rgba(0, 0, 0, 0.4)';
+          eventBorderColor = '#10b981';
+          animationClass = 'ongoing-event-pulse';
+        } else if (hasEvents) {
+          // UPCOMING: Steady blue glow
+          boxShadow = '0 0 0 6px rgba(59, 130, 246, 0.8), 0 0 20px 4px rgba(59, 130, 246, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3)';
+          eventBorderColor = '#3b82f6';
+        }
+        
+        // Create teardrop-shaped custom icon with enhanced visibility for events
         const customIcon = L.divIcon({
           html: `
-            <div class="location-marker ${hasEvents ? 'has-events' : ''}" style="
+            <div class="location-marker ${animationClass}" style="
               background: ${baseColor}; 
-              width: 24px; 
-              height: 24px; 
+              width: ${markerSize}px; 
+              height: ${markerSize}px; 
               border-radius: 50% 50% 50% 0;
               transform: rotate(-45deg);
               display: flex; 
               align-items: center; 
               justify-content: center; 
               box-shadow: ${boxShadow};
-              border: 4px solid ${hasEvents ? '#10b981' : borderColor};
+              border: ${hasEvents ? 5 : 4}px solid ${eventBorderColor};
               cursor: pointer;
+              transition: all 0.3s ease;
             ">
               <span style="
                 transform: rotate(45deg);
-                font-size: 14px;
+                font-size: ${iconSize}px;
               ">${emoji}</span>
             </div>
           `,
-          iconSize: [28, 28],
-          iconAnchor: [14, 14],
+          iconSize: [markerSize + 4, markerSize + 4],
+          iconAnchor: [(markerSize + 4) / 2, (markerSize + 4) / 2],
           className: 'custom-leaflet-marker'
         });
 
@@ -392,7 +414,7 @@ export const LeafletMap = memo<LeafletMapProps>(({
         if (locationEvents.length > 0) {
           eventsHTML = `
             <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
-              <h4 style="font-size: 13px; font-weight: 600; color: #374151; margin: 0 0 8px 0;">📅 Upcoming Events (${locationEvents.length})</h4>
+              <h4 style="font-size: 13px; font-weight: 600; color: #374151; margin: 0 0 8px 0;">📅 Events at this Location (${locationEvents.length})</h4>
               ${locationEvents.slice(0, 3).map(event => {
                 const eventStatus = EventService.getEventStatus(event);
                 const statusColor = eventStatus === 'ongoing' ? '#10b981' : '#3b82f6';
@@ -604,81 +626,154 @@ export const LeafletMap = memo<LeafletMapProps>(({
   };
   */
 
+  // Helper function to get turn icon from instruction text
+  const getTurnIcon = (instruction: string): string => {
+    const lower = instruction.toLowerCase();
+    if (lower.includes('left')) return '⬅️';
+    if (lower.includes('right')) return '➡️';
+    if (lower.includes('arrive') || lower.includes('destination')) return '🏁';
+    if (lower.includes('continue') || lower.includes('straight')) return '⬆️';
+    return '🧭';
+  };
+
+  // Reset step index when route changes
+  useEffect(() => {
+    if (routeInfo) {
+      setCurrentStepIndex(0);
+    }
+  }, [routeInfo]);
+
   return (
     <div className={`relative ${className}`}>
-      {/* Subtle Navigation Bar */}
+      {/* Enhanced Navigation Bar with Inline Directions */}
       {enableRouting && routingMode && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-black/60 text-white rounded-lg shadow-lg px-4 py-2 flex items-center gap-4 backdrop-blur-sm">
-          <p className="text-sm font-medium">
-            {waypoints.length === 0 && "Click on the map to set a starting point."}
-            {waypoints.length === 1 && "Click on the map to set the destination."}
-            {waypoints.length === 2 && routeInfo && `Route: ${routeInfo.distance} (${routeInfo.time})`}
-            {waypoints.length === 2 && !routeInfo && "Calculating route..."}
-          </p>
-          {waypoints.length > 0 && (
-            <button
-              className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1 transition-colors"
-              title="Clear route"
-              aria-label="Clear current route"
-              onClick={handleClearRoute}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Turn-by-Turn Directions Panel */}
-      {routeInfo && routeInfo.instructions && routeInfo.instructions.length > 0 && (
-        <div className="absolute top-20 right-4 z-[1000] bg-white rounded-lg shadow-xl max-w-sm max-h-96 overflow-hidden">
-          <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between">
-            <h3 className="font-semibold text-sm">Turn-by-Turn Directions</h3>
-            <button
-              onClick={() => setRouteInfo(null)}
-              className="hover:bg-blue-700 rounded p-1"
-              title="Close directions"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <div className="overflow-y-auto max-h-80">
-            {routeInfo.instructions.map((instruction, index) => {
-              // Parse instruction for turn type
-              const lowerInst = instruction.toLowerCase();
-              let icon = '⬆️'; // straight
-              if (lowerInst.includes('left')) icon = '⬅️';
-              else if (lowerInst.includes('right')) icon = '➡️';
-              else if (lowerInst.includes('arrive') || lowerInst.includes('destination')) icon = '🏁';
-              
-              return (
-                <div
-                  key={index}
-                  className="px-4 py-3 border-b border-gray-200 hover:bg-gray-50 flex items-start gap-3"
-                >
-                  <span className="text-xl flex-shrink-0 mt-0.5">{icon}</span>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-800">{instruction}</p>
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] rounded-xl shadow-2xl backdrop-blur-md max-w-2xl w-full mx-4" style={{
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(59, 130, 246, 0.95) 100%)'
+        }}>
+          <div className="px-4 py-3">
+            {/* Waiting for waypoints */}
+            {waypoints.length === 0 && (
+              <p className="text-sm font-medium text-white text-center">
+                🗺️ Click on the map to set a starting point
+              </p>
+            )}
+            
+            {/* Waiting for destination */}
+            {waypoints.length === 1 && (
+              <p className="text-sm font-medium text-white text-center">
+                📍 Click on the map to set the destination
+              </p>
+            )}
+            
+            {/* Calculating route */}
+            {waypoints.length === 2 && !routeInfo && (
+              <p className="text-sm font-medium text-white text-center">
+                ⏳ Calculating route...
+              </p>
+            )}
+            
+            {/* Route found - show inline directions */}
+            {waypoints.length === 2 && routeInfo && (
+              <div className="space-y-2">
+                {/* Route Summary */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 text-white">
+                    <span className="text-lg">🧭</span>
+                    <span className="font-semibold text-sm">
+                      {routeInfo.distance} • {routeInfo.time}
+                    </span>
+                    {routeInfo.instructions && routeInfo.instructions.length > 0 && (
+                      <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
+                        Step {currentStepIndex + 1} of {routeInfo.instructions.length}
+                      </span>
+                    )}
                   </div>
-                  <span className="text-xs text-gray-500 flex-shrink-0">{index + 1}</span>
+                  <button
+                    className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1.5 transition-colors"
+                    title="Clear route"
+                    aria-label="Clear current route"
+                    onClick={handleClearRoute}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
-              );
-            })}
+                
+                {/* Current Turn Instruction */}
+                {routeInfo.instructions && routeInfo.instructions.length > 0 && (
+                  <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2 backdrop-blur-sm">
+                    <span className="text-2xl flex-shrink-0">
+                      {getTurnIcon(routeInfo.instructions[currentStepIndex])}
+                    </span>
+                    <p className="text-sm text-white font-medium flex-1 truncate">
+                      {routeInfo.instructions[currentStepIndex]}
+                    </p>
+                    {routeInfo.instructions.length > 1 && (
+                      <div className="flex gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => setCurrentStepIndex(Math.max(0, currentStepIndex - 1))}
+                          disabled={currentStepIndex === 0}
+                          className="text-white/80 hover:text-white hover:bg-white/20 rounded p-1 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Previous step"
+                          aria-label="Previous navigation step"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setCurrentStepIndex(Math.min(routeInfo.instructions.length - 1, currentStepIndex + 1))}
+                          disabled={currentStepIndex === routeInfo.instructions.length - 1}
+                          className="text-white/80 hover:text-white hover:bg-white/20 rounded p-1 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Next step"
+                          aria-label="Next navigation step"
+                        >
+                          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+          
+          {/* Clear route button for non-route states */}
+          {waypoints.length > 0 && waypoints.length < 2 && (
+            <div className="absolute top-3 right-3">
+              <button
+                className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1.5 transition-colors"
+                title="Clear route"
+                aria-label="Clear current route"
+                onClick={handleClearRoute}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       {/* Search Results Counter with Accessibility */}
     <div 
-      className={`absolute top-4 z-[1000] bg-white rounded-lg shadow-lg px-3 py-2 ${
+      className={`absolute top-4 z-[1000] rounded-lg shadow-xl px-3 py-2 ${
         enableRouting ? 'right-4' : 'left-4'
       }`}
+      style={{
+        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(59, 130, 246, 0.95))',
+        border: '2px solid rgba(255, 255, 255, 0.3)',
+        backdropFilter: 'blur(10px)'
+      }}
       role="status"
       aria-live="polite"
       aria-label={`Search results: ${(Array.isArray(filteredLocations) ? filteredLocations.length : 0)} location${(Array.isArray(filteredLocations) ? filteredLocations.length : 0) !== 1 ? 's' : ''} found`}
     >
-        <span className="text-sm font-medium">
+        <span className="text-sm font-semibold text-white">
       {(Array.isArray(filteredLocations) ? filteredLocations.length : 0)} location{(Array.isArray(filteredLocations) ? filteredLocations.length : 0) !== 1 ? 's' : ''} found
         </span>
       </div>
@@ -686,17 +781,29 @@ export const LeafletMap = memo<LeafletMapProps>(({
       {/* Loading State with Accessibility */}
       {!isMapLoaded && !mapError && (
         <div 
-          className="absolute inset-0 bg-gray-50 flex items-center justify-center z-[2000]"
+          className="absolute inset-0 flex items-center justify-center z-[2000]"
+          style={{
+            background: 'linear-gradient(135deg, #fffef7 0%, #fffcf5 50%, #fffbf0 100%)'
+          }}
           role="status"
           aria-live="polite"
           aria-label="Loading campus map"
         >
           <div className="text-center">
             <div 
-              className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"
+              className="animate-spin rounded-full h-8 w-8 mx-auto mb-2"
+              style={{
+                border: '3px solid transparent',
+                borderTop: '3px solid #10b981',
+                borderRight: '3px solid #3b82f6'
+              }}
               aria-hidden="true"
             />
-            <p className="text-gray-600 text-sm">Loading campus map...</p>
+            <p className="font-medium text-sm" style={{
+              background: 'linear-gradient(90deg, #10b981, #3b82f6)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent'
+            }}>Loading campus map...</p>
           </div>
         </div>
       )}
@@ -704,7 +811,10 @@ export const LeafletMap = memo<LeafletMapProps>(({
       {/* Error State with Accessibility */}
       {mapError && (
         <div 
-          className="absolute inset-0 bg-red-50 flex items-center justify-center z-[2000]"
+          className="absolute inset-0 flex items-center justify-center z-[2000]"
+          style={{
+            background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)'
+          }}
           role="alert"
           aria-live="assertive"
           aria-label={`Map error: ${mapError}`}
@@ -720,7 +830,12 @@ export const LeafletMap = memo<LeafletMapProps>(({
       <div 
         key="map-v7-large-bounds-final"
         ref={mapRef} 
-        className="w-full h-full rounded-lg overflow-hidden"
+        className="w-full h-full overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, #fffef7 0%, #fffcf5 50%, #fffbf0 100%)',
+          minHeight: '500px',
+          position: 'relative'
+        }}
         role="img"
         aria-label="Interactive campus map showing locations and events"
         tabIndex={0}

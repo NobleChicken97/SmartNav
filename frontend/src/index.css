@@ -442,7 +442,11 @@ h1.hero-title,
   animation: marker-pulse 2s ease-in-out infinite;
 }
 
-/* Pulsing animation for ongoing events */
+/* Pulsing animation for ongoing events - STRONGER */
+.location-marker.ongoing-event-pulse {
+  animation: ongoing-pulse 1.5s ease-in-out infinite !important;
+}
+
 .event-marker.ongoing-event {
   animation: event-pulse 1.5s ease-in-out infinite;
 }
@@ -454,6 +458,18 @@ h1.hero-title,
   }
   50% {
     transform: rotate(-45deg) scale(1.08);
+  }
+}
+
+@keyframes ongoing-pulse {
+  0%,
+  100% {
+    transform: rotate(-45deg) scale(1);
+    filter: brightness(1);
+  }
+  50% {
+    transform: rotate(-45deg) scale(1.15);
+    filter: brightness(1.2);
   }
 }
 

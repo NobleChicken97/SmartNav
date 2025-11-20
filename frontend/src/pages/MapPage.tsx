@@ -139,9 +139,14 @@ const MapPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{
+      background: 'linear-gradient(135deg, #fffef7 0%, #fffcf5 50%, #fffbf0 100%)'
+    }}>
       {/* Header */}
-      <header className="navbar">
+      <header className="navbar shadow-lg" style={{
+        background: 'linear-gradient(90deg, #fffef9 0%, #fffdf5 50%, #fffcf0 100%)',
+        borderBottom: '2px solid rgba(16, 185, 129, 0.3)'
+      }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -159,7 +164,7 @@ const MapPage: React.FC = () => {
                 {user.role === 'organizer' && (
                   <Link
                     to="/organizer/dashboard"
-                    className="text-sm px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 font-medium rounded-lg border border-blue-200 transition-all"
+                    className="text-sm px-4 py-2 bg-gradient-to-r from-blue-50 to-violet-50 text-blue-700 hover:from-blue-100 hover:to-violet-100 hover:text-blue-800 font-semibold rounded-lg border border-blue-300 hover:border-violet-400 transition-all shadow-sm hover:shadow-md"
                   >
                     📊 Organizer Dashboard
                   </Link>
@@ -168,7 +173,7 @@ const MapPage: React.FC = () => {
                 {user.role === 'admin' && (
                   <Link
                     to="/admin/dashboard"
-                    className="text-sm px-4 py-2 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 font-medium rounded-lg border border-red-200 transition-all"
+                    className="text-sm px-4 py-2 bg-gradient-to-r from-emerald-50 to-blue-50 text-emerald-700 hover:from-emerald-100 hover:to-blue-100 hover:text-emerald-800 font-semibold rounded-lg border border-emerald-300 hover:border-blue-400 transition-all shadow-sm hover:shadow-md"
                   >
                     ⚙️ Admin Dashboard
                   </Link>
@@ -188,7 +193,14 @@ const MapPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6" style={{
+          padding: '1.5rem',
+          borderRadius: '1rem',
+          background: 'rgba(255, 255, 250, 0.6)',
+          border: '2px solid rgba(16, 185, 129, 0.25)',
+          backdropFilter: 'blur(20px)',
+          boxShadow: '0 8px 32px rgba(16, 185, 129, 0.15)'
+        }}>
           {/* Sidebar - Search and Filters */}
           <div className="lg:col-span-1">
             <SearchFilters
@@ -203,8 +215,11 @@ const MapPage: React.FC = () => {
 
             {/* Selected Item Details */}
             {(selectedLocation || selectedEvent) && (
-              <div className="mt-6 card p-4">
-                <h3 className="font-semibold text-lg mb-3">
+              <div className="mt-6 card p-4" style={{
+                background: 'linear-gradient(135deg, rgba(255, 255, 248, 0.5), rgba(255, 255, 245, 0.3))',
+                borderColor: 'rgba(16, 185, 129, 0.3)'
+              }}>
+                <h3 className="font-semibold text-lg mb-3 text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-yellow-600">
                   {selectedLocation ? 'Location Details' : 'Event Details'}
                 </h3>
                 
@@ -282,7 +297,12 @@ const MapPage: React.FC = () => {
           </div>
 
           {/* Map */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3" style={{
+            borderRadius: '1rem',
+            overflow: 'hidden',
+            boxShadow: '0 10px 40px rgba(16, 185, 129, 0.25), 0 0 0 3px rgba(16, 185, 129, 0.2)',
+            border: '3px solid rgba(16, 185, 129, 0.4)'
+          }}>
             <LeafletMap
               locations={filteredLocations}
               events={filteredEvents}
@@ -291,7 +311,7 @@ const MapPage: React.FC = () => {
               enableRouting={true}
               routingMode={routingMode}
               onToggleRouting={() => setRoutingMode(!routingMode)}
-              className="h-[calc(100vh-8rem)] rounded-lg overflow-hidden shadow-md"
+              className="h-[calc(100vh-8rem)]"
             />
           </div>
         </div>

@@ -159,13 +159,13 @@ const SearchFilters = memo<SearchFiltersProps>(({
       {/* Search Bar */}
       <div className="p-4 border-b">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-500 h-5 w-5" />
           <input
             type="text"
             placeholder="Search locations and events..."
             value={localSearchQuery}
             onChange={(e) => setLocalSearchQuery(e.target.value)}
-            className="search-input pl-10"
+            className="search-input pl-10 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400"
           />
           {localSearchQuery && (
             <button
@@ -179,18 +179,20 @@ const SearchFilters = memo<SearchFiltersProps>(({
       </div>
 
       {/* Filter Toggle */}
-      <div className="px-4 py-2 border-b flex items-center justify-between">
+      <div className="px-4 py-2 border-b border-blue-100 flex items-center justify-between" style={{
+        background: showFilters ? 'linear-gradient(90deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.08))' : 'transparent'
+      }}>
         <button
           onClick={() => setShowFilters(!showFilters)}
           className={cn(
-            'btn btn-ghost !px-3 !py-1 flex items-center space-x-2',
-            showFilters && 'bg-blue-100 text-blue-700'
+            'btn btn-ghost !px-3 !py-1 flex items-center space-x-2 transition-all',
+            showFilters && 'bg-gradient-to-r from-blue-500 to-violet-500 text-white shadow-md'
           )}
         >
           <Filter className="h-4 w-4" />
-          <span>Filters</span>
+          <span className="font-medium">Filters</span>
           {hasActiveFilters && (
-            <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
+            <span className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-xs rounded-full px-2 py-0.5 font-semibold shadow-sm">
               {activeFilters.category.length + (activeFilters.accessibility ? 1 : 0)}
             </span>
           )}
@@ -199,7 +201,7 @@ const SearchFilters = memo<SearchFiltersProps>(({
         {hasActiveFilters && (
           <button
             onClick={handleClearFilters}
-            className="btn btn-outline !text-sm"
+            className="btn btn-outline !text-sm hover:bg-gradient-to-r hover:from-red-500 hover:to-pink-500 hover:text-white hover:border-transparent transition-all"
           >
             Clear all
           </button>
@@ -207,12 +209,14 @@ const SearchFilters = memo<SearchFiltersProps>(({
       </div>
 
       {/* Navigation Toggle */}
-      <div className="px-4 py-2 border-b">
+      <div className="px-4 py-2 border-b border-emerald-100" style={{
+        background: routingMode ? 'linear-gradient(90deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.1))' : 'transparent'
+      }}>
         <button
           onClick={onToggleRouting}
           className={cn(
-            'btn btn-ghost !px-3 !py-1 flex items-center space-x-2 w-full',
-            routingMode && 'bg-blue-100 text-blue-700'
+            'btn btn-ghost !px-3 !py-1 flex items-center space-x-2 w-full transition-all font-medium',
+            routingMode && 'bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg transform scale-105'
           )}
         >
           <span className="text-lg">🧭</span>
@@ -225,18 +229,20 @@ const SearchFilters = memo<SearchFiltersProps>(({
         <div className="p-4 space-y-4">
           {/* Location Type Filters */}
           <div>
-            <h4 className="font-medium text-gray-900 mb-2 flex items-center">
-              <MapPin className="h-4 w-4 mr-1" />
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center px-3 py-2 rounded-lg" style={{
+              background: 'linear-gradient(90deg, rgba(16, 185, 129, 0.1), rgba(59, 130, 246, 0.05))'
+            }}>
+              <MapPin className="h-4 w-4 mr-2 text-emerald-600" />
               Location Types
             </h4>
             <div className="space-y-2">
               {['building', 'room', 'poi'].map((type) => (
-                <label key={type} className="flex items-center">
+                <label key={type} className="flex items-center hover:bg-emerald-50 px-2 py-1 rounded transition-colors cursor-pointer">
                   <input
                     type="checkbox"
                     checked={activeFilters.category.includes(type)}
                     onChange={() => handleCategoryToggle(type)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 focus:ring-2"
                   />
                   <span className="ml-2 text-sm text-gray-700 capitalize">{type}</span>
                 </label>
@@ -246,16 +252,18 @@ const SearchFilters = memo<SearchFiltersProps>(({
 
           {/* Accessibility Filter */}
           <div>
-            <h4 className="font-medium text-gray-900 mb-2 flex items-center">
-              <Users className="h-4 w-4 mr-1" />
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center px-3 py-2 rounded-lg" style={{
+              background: 'linear-gradient(90deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.05))'
+            }}>
+              <Users className="h-4 w-4 mr-2 text-violet-600" />
               Accessibility
             </h4>
-            <label className="flex items-center">
+            <label className="flex items-center hover:bg-violet-50 px-2 py-1 rounded transition-colors cursor-pointer">
               <input
                 type="checkbox"
                 checked={activeFilters.accessibility}
-                onChange={handleAccessibilityToggle}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                onChange={() => handleAccessibilityToggle()}
+                className="rounded border-gray-300 text-violet-600 focus:ring-violet-500 focus:ring-2"
               />
               <span className="ml-2 text-sm text-gray-700">Wheelchair accessible only</span>
             </label>
