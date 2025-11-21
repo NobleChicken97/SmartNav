@@ -63,10 +63,10 @@ const LocationEditor = ({ isOpen, onClose, onSave, location, title }: LocationEd
     setError(null);
   }, [location, isOpen]);
 
-  const handleCoordinatesChange = (lat: number, lng: number) => {
+  const handleCoordinatesChange = (coords: { lat: number; lng: number }) => {
     setFormData(prev => ({
       ...prev,
-      coordinates: { lat, lng }
+      coordinates: coords
     }));
   };
 
@@ -181,7 +181,7 @@ const LocationEditor = ({ isOpen, onClose, onSave, location, title }: LocationEd
                       type="number"
                       step="any"
                       value={formData.coordinates.lat}
-                      onChange={(e) => handleCoordinatesChange(parseFloat(e.target.value), formData.coordinates.lng)}
+                      onChange={(e) => handleCoordinatesChange({ lat: parseFloat(e.target.value), lng: formData.coordinates.lng })}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                     />
                   </div>
@@ -191,7 +191,7 @@ const LocationEditor = ({ isOpen, onClose, onSave, location, title }: LocationEd
                       type="number"
                       step="any"
                       value={formData.coordinates.lng}
-                      onChange={(e) => handleCoordinatesChange(formData.coordinates.lat, parseFloat(e.target.value))}
+                      onChange={(e) => handleCoordinatesChange({ lat: formData.coordinates.lat, lng: parseFloat(e.target.value) })}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                     />
                   </div>
