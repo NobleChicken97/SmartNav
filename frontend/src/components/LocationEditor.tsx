@@ -21,6 +21,11 @@ const LOCATION_TYPES = [
   { value: 'faculty', label: '👨‍🏫 Faculty', emoji: '👨‍🏫' },
   { value: 'entertainment', label: '🎭 Entertainment', emoji: '🎭' },
   { value: 'shop', label: '🛒 Shop', emoji: '🛒' },
+  { value: 'parking', label: '🅿️ Parking', emoji: '🅿️' },
+  { value: 'medical', label: '🏥 Medical', emoji: '🏥' },
+  { value: 'sports', label: '⚽ Sports', emoji: '⚽' },
+  { value: 'eatables', label: '🍽️ Eatables', emoji: '🍽️' },
+  { value: 'religious', label: '🕌 Religious', emoji: '🕌' },
 ];
 
 const LocationEditor = ({ isOpen, onClose, onSave, location, title }: LocationEditorProps) => {
@@ -140,7 +145,7 @@ const LocationEditor = ({ isOpen, onClose, onSave, location, title }: LocationEd
                 <select
                   required
                   value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as 'hostel' | 'class' | 'faculty' | 'entertainment' | 'shop' })}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value as Location['type'] })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   {LOCATION_TYPES.map(type => (
