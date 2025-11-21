@@ -98,14 +98,14 @@ const MapLocationPicker = ({ coordinates, onCoordinatesChange, locationType = 'h
     // Handle marker drag
     marker.on('dragend', () => {
       const pos = marker.getLatLng();
-      onCoordinatesChange(pos.lat, pos.lng);
+      onCoordinatesChange({ lat: pos.lat, lng: pos.lng });
     });
 
     // Handle map click to place marker
     map.on('click', (e: L.LeafletMouseEvent) => {
       const { lat, lng } = e.latlng;
       marker.setLatLng([lat, lng]);
-      onCoordinatesChange(lat, lng);
+      onCoordinatesChange({ lat, lng });
       
       // Pan to new location
       map.panTo([lat, lng]);
