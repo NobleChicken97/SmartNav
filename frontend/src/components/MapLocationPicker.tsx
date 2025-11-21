@@ -9,8 +9,8 @@ import 'leaflet/dist/leaflet.css';
 
 interface MapLocationPickerProps {
   coordinates: { lat: number; lng: number };
-  onCoordinatesChange: (lat: number, lng: number) => void;
-  locationType?: 'hostel' | 'class' | 'faculty' | 'entertainment' | 'shop' | 'parking' | 'medical' | 'sports' | 'eatables' | 'religious';
+  onCoordinatesChange: (coords: { lat: number; lng: number }) => void;
+  locationType?: 'hostel' | 'class' | 'faculty' | 'entertainment' | 'shop' | 'parking' | 'medical' | 'sports' | 'eatables' | 'religious' | 'bank';
 }
 
 const MapLocationPicker = ({ coordinates, onCoordinatesChange, locationType = 'hostel' }: MapLocationPickerProps) => {
