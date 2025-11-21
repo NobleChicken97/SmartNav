@@ -76,8 +76,8 @@ const validateLocation = [
     .withMessage('Description cannot exceed 500 characters'),
   
   body('type')
-    .isIn(['hostel', 'class', 'faculty', 'entertainment', 'shop'])
-    .withMessage('Type must be one of: hostel, class, faculty, entertainment, shop'),
+    .isIn(['hostel', 'class', 'faculty', 'entertainment', 'shop', 'parking', 'medical', 'sports', 'eatables', 'religious'])
+    .withMessage('Type must be one of: hostel, class, faculty, entertainment, shop, parking, medical, sports, eatables, religious'),
   
   body('coordinates.lat')
     .isFloat({ min: -90, max: 90 })
@@ -203,8 +203,8 @@ const validateLocationQuery = [
   
   query('type')
     .optional()
-    .isIn(['hostel', 'class', 'faculty', 'entertainment', 'shop'])
-    .withMessage('Type must be one of: hostel, class, faculty, entertainment, shop'),
+    .isIn(['hostel', 'class', 'faculty', 'entertainment', 'shop', 'parking', 'medical', 'sports', 'eatables', 'religious'])
+    .withMessage('Type must be one of: hostel, class, faculty, entertainment, shop, parking, medical, sports, eatables, religious'),
   
   query('north')
     .optional()

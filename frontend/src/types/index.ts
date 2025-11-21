@@ -94,7 +94,7 @@ export type UpdateLocationData = Partial<LocationFormData>;
 
 export interface LocationFilters {
   q?: string;
-  type?: 'hostel' | 'class' | 'faculty' | 'entertainment' | 'shop';
+  type?: 'hostel' | 'class' | 'faculty' | 'entertainment' | 'shop' | 'parking' | 'medical' | 'sports' | 'eatables' | 'religious';
   north?: number;
   south?: number;
   east?: number;
