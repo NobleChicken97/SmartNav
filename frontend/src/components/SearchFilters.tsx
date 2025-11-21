@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, memo } from 'react';
-import { Search, Filter, X, MapPin, Users } from 'lucide-react';
+import { Search, Filter, X, MapPin } from 'lucide-react';
 import { useMapStore } from '../stores/mapStore';
 import { Location, Event } from '../types';
 import { cn, debounce } from '../utils';
@@ -116,12 +116,7 @@ const SearchFilters = memo<SearchFiltersProps>(({
       );
     }
 
-    // Apply accessibility filter
-    if (activeFilters.accessibility) {
-      filteredLocations = filteredLocations.filter((location) =>
-        location.accessibility?.wheelchairAccessible
-      );
-    }
+
 
     return {
       filteredLocs: filteredLocations,
@@ -143,16 +138,14 @@ const SearchFilters = memo<SearchFiltersProps>(({
     updateFilters({ category: categories });
   };
 
-  const handleAccessibilityToggle = () => {
-    updateFilters({ accessibility: !activeFilters.accessibility });
-  };
+
 
   const handleClearFilters = () => {
     setLocalSearchQuery('');
     clearFilters();
   };
 
-  const hasActiveFilters = searchQuery.trim() || activeFilters.category.length > 0 || activeFilters.accessibility;
+  const hasActiveFilters = searchQuery.trim() || activeFilters.category.length > 0;
 
   return (
     <div className={cn('card', className)}>
@@ -193,7 +186,7 @@ const SearchFilters = memo<SearchFiltersProps>(({
           <span className="font-medium">Filters</span>
           {hasActiveFilters && (
             <span className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-xs rounded-full px-2 py-0.5 font-semibold shadow-sm">
-              {activeFilters.category.length + (activeFilters.accessibility ? 1 : 0)}
+              {activeFilters.category.length}
             </span>
           )}
         </button>
@@ -250,24 +243,7 @@ const SearchFilters = memo<SearchFiltersProps>(({
             </div>
           </div>
 
-          {/* Accessibility Filter */}
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-3 flex items-center px-3 py-2 rounded-lg" style={{
-              background: 'linear-gradient(90deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.05))'
-            }}>
-              <Users className="h-4 w-4 mr-2 text-violet-600" />
-              Accessibility
-            </h4>
-            <label className="flex items-center hover:bg-violet-50 px-2 py-1 rounded transition-colors cursor-pointer">
-              <input
-                type="checkbox"
-                checked={activeFilters.accessibility}
-                onChange={() => handleAccessibilityToggle()}
-                className="rounded border-gray-300 text-violet-600 focus:ring-violet-500 focus:ring-2"
-              />
-              <span className="ml-2 text-sm text-gray-700">Wheelchair accessible only</span>
-            </label>
-          </div>
+
 
           {/* Quick Stats */}
           <div className="pt-2 border-t">

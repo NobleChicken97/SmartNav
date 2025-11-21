@@ -240,11 +240,6 @@ const MapPage: React.FC = () => {
                           <span className="text-gray-900">{selectedLocation.tags.join(', ')}</span>
                         </div>
                       )}
-                      {selectedLocation.accessibility?.wheelchairAccessible && (
-                        <div className="flex items-center text-sm text-green-600">
-                          <span>♿ Wheelchair accessible</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}

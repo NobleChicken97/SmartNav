@@ -61,12 +61,6 @@ export interface Location {
   floor?: number | string;
   tags: string[];
   meta?: Record<string, unknown>;
-  accessibility?: {
-    wheelchairAccessible: boolean;
-    elevatorAccess?: boolean;
-    brailleSignage?: boolean;
-    audioAssistance?: boolean;
-  };
   createdAt: string;
   updatedAt: string;
 }
@@ -80,12 +74,6 @@ export interface LocationFormData {
   floor?: number | string;
   tags: string[];
   meta?: Record<string, unknown>;
-  accessibility?: {
-    wheelchairAccessible: boolean;
-    elevatorAccess?: boolean;
-    brailleSignage?: boolean;
-    audioAssistance?: boolean;
-  };
 }
 
 export type CreateLocationData = LocationFormData;

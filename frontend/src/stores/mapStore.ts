@@ -18,7 +18,6 @@ interface MapState {
   filteredLocations: Location[] | null;
   activeFilters: {
     category: string[];
-    accessibility: boolean;
   };
   cameraPresets: CameraPreset[];
   currentPreset: string | null;
@@ -98,7 +97,6 @@ export const useMapStore = create<MapStore>((set, get) => ({
   filteredLocations: null,
   activeFilters: {
     category: [],
-    accessibility: false,
   },
   cameraPresets: defaultPresets,
   currentPreset: null,
